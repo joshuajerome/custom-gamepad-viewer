@@ -10,3 +10,8 @@ tmp/*
 # IDE/editor junk
 .vscode/
 .DS_Store
+
+# Builds
+dist/
+**.spec
+build/
