@@ -1,4 +1,3 @@
-# server/handler.py
 from http.server import SimpleHTTPRequestHandler
 from urllib.parse import urlparse
 from pathlib import Path
@@ -10,10 +9,10 @@ from server.slot_store import SlotStore
 from server.state import AppState
 
 BASE_DIR = Path(__file__).resolve().parent
+REPO_ROOT = BASE_DIR.parents[1]
 STATIC_DIR = BASE_DIR / "static"
 
 class DevHandler(SimpleHTTPRequestHandler):
-    # Injected by cli.py
     index_css_path: str = "controller_css/layout.css"
     vars_css_path:  str = "controller_css/vars.css"
     skin_folders:   dict = {}
@@ -37,10 +36,12 @@ class DevHandler(SimpleHTTPRequestHandler):
             return self._serve_slot_json()
         if parsed.path == "/api/config":
             return self._serve_config_json()
+        if parsed.path == "/api/themes":
+            return self._serve_themes()
         if parsed.path == "/overlay":
             return self._serve_overlay()
         return super().do_GET()
-
+    
     def do_POST(self):
         parsed = urlparse(self.path)
         if parsed.path == "/api/slot":
@@ -55,8 +56,36 @@ class DevHandler(SimpleHTTPRequestHandler):
         css_url = f"http://{self.host}:{self.port}/{self.index_css_path}"
         return f"https://gamepadviewer.com/?p={player}&s=5&editcss={css_url}"
 
+    def _serve_themes(self):
+        """Return discovered themes and any missing files per theme."""
+        payload = {"themes": []}
+        for name, relpath in sorted(self.skin_folders.items()):
+            folder = REPO_ROOT / relpath
+            missing = [f for f in self.var_files.values() if not (folder / f).exists()]
+            payload["themes"].append({
+                "name": name,
+                "path": relpath,
+                "ok": len(missing) == 0,
+                "missing": missing,
+            })
+        body = json.dumps(payload).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def _serve_vars_css(self):
         skin = self.state.get().skin
+        if skin not in self.skin_folders:
+            if self.skin_folders:
+                skin = sorted(self.skin_folders.keys())[0]
+                self.state.set_skin(skin)
+                logger.warning("Requested skin not found; falling back to '{}'", skin)
+            else:
+                self.send_error(500, "No themes found in /themes")
+                return
+
         skin_folder = self.skin_folders[skin]
         css = build_vars_css(skin_folder, self.var_files)
         logger.debug("Serving /{} (skin='{}')", self.vars_css_path, skin)
@@ -79,6 +108,7 @@ class DevHandler(SimpleHTTPRequestHandler):
         payload = {
             "skin": cfg.skin,
             "player": cfg.player,
+            "available_skins": sorted(self.skin_folders.keys()),
             "gpv_url": self._gpv_url(cfg.player),
             "css_url": f"http://{self.host}:{self.port}/{self.index_css_path}",
         }
@@ -102,6 +132,10 @@ class DevHandler(SimpleHTTPRequestHandler):
             if skin in self.skin_folders:
                 self.state.set_skin(skin)
                 logger.info("Skin changed -> {}", skin)
+            else:
+                self.send_error(400, f"Unknown skin '{skin}'")
+                return
+
         if "player" in data:
             try:
                 self.state.set_player(int(data["player"]))
@@ -115,6 +149,7 @@ class DevHandler(SimpleHTTPRequestHandler):
             "skin": cfg.skin,
             "player": cfg.player,
             "gpv_url": self._gpv_url(cfg.player),
+            "css_url": f"http://{self.host}:{self.port}/{self.index_css_path}",
         }
         body = json.dumps(payload).encode("utf-8")
         self.send_response(200)
@@ -134,7 +169,6 @@ class DevHandler(SimpleHTTPRequestHandler):
             self.send_error(400, "Expected JSON {\"index\": <non-negative int>}")
             return
 
-        # persist and mirror to state.player
         try:
             player, payload_bytes = self.slot_store.save_index(index)
         except Exception as e:
