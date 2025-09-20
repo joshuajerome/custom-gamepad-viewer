@@ -24,7 +24,7 @@ if __name__ == "__main__":
     logger.info("CWD set to {}", Path.cwd())
     logger.info(
         "Exists css? {}  themes? {}  overlay? {}",
-        Path("css").exists(),
+        Path("controller_css").exists(),
         Path("themes").exists(),
         Path("server/static/overlay.html").exists(),
     )

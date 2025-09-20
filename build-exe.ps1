@@ -14,7 +14,7 @@ function Assert-Path($p) {
 
 # Validate required paths
 Assert-Path "app.py"
-Assert-Path "css"
+Assert-Path "controller_css"
 Assert-Path "themes"
 Assert-Path "index.html"
 Assert-Path "server\static"
@@ -29,7 +29,7 @@ $opts = @(
   "--clean",
   "--console",
   "--name", "local-gamepad-viewer",
-  "--add-data", "css;css",
+  "--add-data", "controller_css;controller_css",
   "--add-data", "themes;themes",
   "--add-data", "index.html;.",
   "--add-data", "server/static;server/static"

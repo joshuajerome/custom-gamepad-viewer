@@ -9,8 +9,8 @@ class Config:
     port: int = 8000
 
     # Relative to repo root (served as static)
-    index_css_path: str = "css/layout.css"   # GPV should load this
-    vars_css_path:  str = "css/vars.css"     # generated on the fly
+    index_css_path: str = "controller_css/layout.css"   # GPV should load this
+    vars_css_path:  str = "controller_css/vars.css"     # generated on the fly
     slot_json_path: str = "tmp/slot.json"        # persisted slot info
 
     # Available skins (relative to repo root)

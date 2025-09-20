@@ -19,19 +19,29 @@ function Remove-IfExists {
 if ($clean) {
     Write-Host "Cleaning workspace..." -ForegroundColor Yellow
 
+    # Deactivate and strip venv PATH if active
     if ($env:VIRTUAL_ENV -and (Test-Path $env:VIRTUAL_ENV)) {
         Write-Host "  Deactivating active virtual environment..." -ForegroundColor Yellow
         if (Get-Command deactivate -ErrorAction SilentlyContinue) {
             deactivate
         }
         Remove-Item Env:VIRTUAL_ENV -ErrorAction SilentlyContinue
-        $env:PATH = ($env:PATH -split ';' | Where-Object {$_ -notlike "*\.venv*"} ) -join ';'
+        $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -notlike "*\.venv*" }) -join ';'
     }
 
+    # Project-specific removals
     Remove-IfExists ".venv"
+    Remove-IfExists "tmp\slot.json"
+    Remove-IfExists "build"
+    Remove-IfExists "dist"
 
-    Remove-IfExists "misc\emulator.log"
+    # Remove any PyInstaller spec files at repo root (e.g., local-gamepad-viewer.spec)
+    Get-ChildItem -LiteralPath . -Filter *.spec -File -ErrorAction SilentlyContinue | ForEach-Object {
+        Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue
+        Write-Host "  Removed $($_.Name)"
+    }
 
+    # Purge __pycache__ everywhere
     Get-ChildItem -Recurse -Directory -Force -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -eq "__pycache__" } |
         ForEach-Object {
@@ -39,6 +49,7 @@ if ($clean) {
             Write-Host "  Removed $($_.FullName)"
         }
 
+    # Example leftover path from your original script; keep if relevant
     Remove-IfExists "containers\dockerfiles\buildtime"
 
     Write-Host "Clean complete.`n" -ForegroundColor Green
@@ -58,7 +69,7 @@ if ($build) {
     pip install uv
 
     Write-Host "[4/4] Initializing uv project..." -ForegroundColor Cyan
-    uv sync 
+    uv sync
 
     Write-Host "`nEnvironment setup complete!" -ForegroundColor Green
 }
