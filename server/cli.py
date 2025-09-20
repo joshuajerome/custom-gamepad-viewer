@@ -85,16 +85,16 @@ def main():
         css_url = f"http://{sa_host}:{sa_port}/{args.index}"
         gpv_url = f"https://gamepadviewer.com/?p={player}&s=5&editcss={css_url}"
 
-        logger.info("HTTP server started on http://{}:{}", sa_host, sa_port)
-        logger.info("Initial skin: {}", state.get().skin)
-        logger.info("Serving layout.css: {}", css_url)
-        logger.info("Generated vars.css: http://{}:{}/{}", sa_host, sa_port, args.vars)
+        logger.debug("HTTP server started on http://{}:{}", sa_host, sa_port)
+        logger.debug("Initial skin: {}", state.get().skin)
+        logger.debug("Serving layout.css: {}", css_url)
+        logger.debug("Generated vars.css: http://{}:{}/{}", sa_host, sa_port, args.vars)
         logger.info("Gamepad Viewer link: {}", gpv_url)
         logger.info("Home:              http://{}:{}/", sa_host, sa_port)
-        logger.info("Overlay (no UI):   http://{}:{}/overlay", sa_host, sa_port)
-        logger.info("Slot file:         {}", slot_path)
-        logger.info("Slot checker:      http://{}:{}/server/static/check_slot.html", sa_host, sa_port)
-        logger.info("Config API:        GET/POST http://{}:{}/api/config", sa_host, sa_port)
+        logger.debug("Overlay (no UI):   http://{}:{}/overlay", sa_host, sa_port)
+        logger.debug("Slot file:         {}", slot_path)
+        logger.debug("Slot checker:      http://{}:{}/server/static/check_slot.html", sa_host, sa_port)
+        logger.debug("Config API:        GET/POST http://{}:{}/api/config", sa_host, sa_port)
 
         try:
             httpd.serve_forever()

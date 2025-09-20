@@ -14,8 +14,8 @@ STATIC_DIR = BASE_DIR / "static"
 
 class DevHandler(SimpleHTTPRequestHandler):
     # Injected by cli.py
-    index_css_path: str = "css/layout.css"
-    vars_css_path:  str = "css/vars.css"
+    index_css_path: str = "controller_css/layout.css"
+    vars_css_path:  str = "controller_css/vars.css"
     skin_folders:   dict = {}
     var_files:      dict = {}
     slot_store:     SlotStore = None
