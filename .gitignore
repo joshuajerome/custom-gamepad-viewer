@@ -5,8 +5,7 @@
 **/.venv/
 
 # Gamepad Viewer slot state
-slot.json
-
+tmp/*
 
 # IDE/editor junk
 .vscode/
