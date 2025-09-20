@@ -26,7 +26,7 @@
 }
 .ds4 .trigger {
   width: 117px;
-  height: 107px;            /* fix: add missing px */
+  height: 107px;
   background: var(--trigger);
   opacity: 0;
 }
@@ -114,7 +114,7 @@
   transform: rotateY(180deg);
 }
 
-/* Face buttons (ABXY / □○✖△ sprite) */
+/* Face buttons (ABXY) */
 .ds4 .abxy {
   position: absolute;
   width: 182px;

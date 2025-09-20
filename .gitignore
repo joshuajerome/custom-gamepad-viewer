@@ -1,1 +1,12 @@
-**/*.venv
+# Python
+**/__pycache__/
+
+# Virtual envs
+**/.venv/
+
+# Gamepad Viewer slot state
+tmp/*
+
+# IDE/editor junk
+.vscode/
+.DS_Store

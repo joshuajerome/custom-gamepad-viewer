@@ -1,0 +1,246 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Local Gamepad Viewer</title>
+
+<link rel="stylesheet" href="https://unpkg.com/@cds/core/global.min.css">
+
+<style>
+  :root {
+    --accent: #2563eb;
+    --bg: #1a1a1a;
+    --panel: #2a2a2a;
+    --text: #f0f0f0;
+    --muted: #aaa;
+
+    /* Preview scale: 0.60 = 60% of 1280x720 → ~768x432 visible */
+    --scale: 0.60;
+    /* Base GPV dimensions  */
+    --gpv-w: 1280px;
+    --gpv-h: 720px;
+  }
+
+  /* Layout + theme */
+  body {
+    margin: 0;
+    font: 14px/1.4 system-ui, Segoe UI, Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+  header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    min-height: calc(100vh - 56px);
+  }
+
+  .card {
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 14px;
+    background: var(--panel);
+  }
+  .row { display: grid; gap: 8px; margin-bottom: 12px; }
+  label { font-weight: 600; }
+
+  select, button {
+    font: inherit;
+    color: var(--text);
+    background: #333;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 8px;
+  }
+  select:focus, button:focus { outline: 2px solid var(--accent); }
+
+  .btn { cursor: pointer; transition: background-color .2s; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn:hover { background: #444; }
+  .btn.primary:hover { background: #1e4ed8; }
+
+  .kickers { display:flex; gap:10px; flex-wrap:wrap; }
+  .kickers a { text-decoration:none; color: var(--accent); }
+
+  .muted { opacity:.85; font-size:12px; color: var(--muted); }
+
+  /* Preview shell */
+  .preview-wrap {
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+    border: 1px solid #333;
+    background: #000;
+    padding: 6px;
+
+    width: calc(var(--gpv-w) * var(--scale) + 150px);
+    margin-inline: auto;
+  }
+
+  .preview-scale {
+    transform: scale(var(--scale));
+    transform-origin: top left;
+
+    width: var(--gpv-w);
+    height: var(--gpv-h);
+  }
+
+  /* Controller */
+  #gpv {
+    width: calc(var(--gpv-w) + 200px);
+    height: calc(var(--gpv-h) + 500px);
+    border: 0;
+    background: transparent;
+    display: block;
+  }
+
+  @media (max-width: 720px) {
+    .container { max-width: 100%; }
+    main { padding: 12px; }
+  }
+</style>
+
+<div class="container">
+  <header>
+    <div><b>Local Gamepad Viewer</b></div>
+    <div class="kickers">
+      <a href="./server/static/check_slot.html" target="_blank">Check Slot</a>
+      <a id="link-gpv" href="#" target="_blank">Open in Gamepad Viewer</a>
+      <a href="/overlay" target="_blank">Overlay (no UI)</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Control panel -->
+    <section class="card">
+      <h3>Settings</h3>
+
+      <div class="row">
+        <label for="skin">Theme</label>
+        <select id="skin">
+          <option value="white">White</option>
+          <option value="black">Black</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <label for="player">Player</label>
+        <select id="player">
+          <option value="1">P1</option>
+          <option value="2">P2</option>
+          <option value="3">P3</option>
+          <option value="4">P4</option>
+        </select>
+        <div class="muted">
+          Tip: open “Check Slot” and press a button; it will auto-save the active index and we’ll update here (no polling).
+        </div>
+      </div>
+
+      <div class="row" style="grid-auto-flow: column; grid-auto-columns: max-content; gap:10px;">
+        <button class="btn primary" id="apply">Apply</button>
+        <button class="btn" id="refresh">Refresh Preview</button>
+      </div>
+
+      <div class="muted" id="status">Ready.</div>
+    </section>
+
+    <!-- Preview -->
+    <section class="card">
+      <h3>Gamepad Viewer</h3>
+      <div class="preview-wrap">
+        <div class="preview-scale">
+          <iframe id="gpv" allow="gamepad *; clipboard-read; clipboard-write"></iframe>
+        </div>
+      </div>
+      <div class="muted" id="urls"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+const selSkin   = document.getElementById('skin');
+const selPlayer = document.getElementById('player');
+const btnApply  = document.getElementById('apply');
+const btnRefresh= document.getElementById('refresh');
+const frame     = document.getElementById('gpv');
+const link      = document.getElementById('link-gpv');
+const statusEl  = document.getElementById('status');
+const urlsEl    = document.getElementById('urls');
+
+async function GET(url){ const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error(r.status); return r.json(); }
+async function POST(url, body){ const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); if(!r.ok) throw new Error(r.status); return r.json(); }
+
+function setPreviewIfChanged(urls){
+  if (frame.src !== urls.gpv_url) frame.src = urls.gpv_url;
+  link.href = urls.gpv_url;
+  urlsEl.textContent = `GPV: ${urls.gpv_url} | CSS: ${urls.css_url}`;
+}
+
+async function loadConfigOnce(){
+  const cfg = await GET('/api/config');
+  selSkin.value   = cfg.skin;
+  selPlayer.value = String(cfg.player);
+  setPreviewIfChanged(cfg);
+}
+
+btnApply.addEventListener('click', async ()=>{
+  statusEl.textContent = 'Applying…';
+  try {
+    const res = await POST('/api/config', { skin: selSkin.value, player: Number(selPlayer.value) });
+
+    const url = res.gpv_url + (res.gpv_url.includes('#') ? `&a=${Date.now()}` : `#a=${Date.now()}`);
+    frame.src = 'about:blank';
+    setTimeout(()=>{ frame.src = url; }, 30);
+
+    link.href = res.gpv_url;
+    urlsEl.textContent = `GPV: ${res.gpv_url} | CSS: ${res.css_url}`;
+
+    localStorage.setItem('lgv_skin', res.skin);
+    localStorage.setItem('lgv_player', String(res.player));
+
+    statusEl.textContent = `Applied: theme=${res.skin}, player=p${res.player}`;
+  } catch(e){
+    statusEl.textContent = 'Failed to apply. ' + e;
+  }
+});
+
+
+btnRefresh.addEventListener('click', async ()=>{
+  statusEl.textContent = 'Refreshing preview…';
+  try {
+    const cfg = await GET('/api/config');
+    const url = cfg.gpv_url + (cfg.gpv_url.includes('#') ? `&r=${Date.now()}` : `#r=${Date.now()}`);
+    frame.src = 'about:blank';
+    setTimeout(()=>{ frame.src = url; }, 30);
+    link.href = cfg.gpv_url;
+    urlsEl.textContent = `GPV: ${cfg.gpv_url} | CSS: ${cfg.css_url}`;
+    statusEl.textContent = 'Preview reloaded.';
+  } catch(e){
+    statusEl.textContent = 'Failed to refresh. ' + e;
+  }
+});
+
+window.addEventListener('storage', async (e)=>{
+  if (e.key === 'lgv_player' || e.key === 'lgv_skin') {
+    try {
+      const cfg = await GET('/api/config');
+      selSkin.value   = cfg.skin;
+      selPlayer.value = String(cfg.player);
+      setPreviewIfChanged(cfg);
+      statusEl.textContent = `Updated from external change → theme=${cfg.skin}, p${cfg.player}`;
+    } catch {}
+  }
+});
+
+loadConfigOnce();
+</script>
