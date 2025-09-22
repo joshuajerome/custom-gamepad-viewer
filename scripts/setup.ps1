@@ -50,20 +50,30 @@ if ($clean) {
 }
 
 if ($build) {
-  $uvPath = Ensure-Uv
-  Write-Host "[1/5] Using uv at: $uvPath" -ForegroundColor Cyan
+  $null = Ensure-Uv
+  $env:UV_NO_PROMPT = "1"   # non-interactive
 
-  Write-Host "[2/5] Creating uv-managed virtual environment (.venv) with CPython 3.12..." -ForegroundColor Cyan
-  uv venv --python 3.12 .venv
+  Write-Host "[2/7] Ensuring uv-managed CPython 3.12 is installed..." -ForegroundColor Cyan
+  uv python install 3.12
 
-  Write-Host "[3/5] Activating virtual environment..." -ForegroundColor Cyan
+  Write-Host "Resolving uv-managed Python path..." -ForegroundColor Cyan
+  $pyWhich = uv run --python 3.12 -- python -c "import sys; print(sys.executable)"
+  Write-Host "Using uv-managed Python: $pyWhich" -ForegroundColor Cyan
+
+  Write-Host "[3/7] Creating uv-managed virtual environment (.venv) with CPython 3.12 (clearing if exists)..." -ForegroundColor Cyan
+  uv venv --python "$pyWhich" --clear .venv
+
+  Write-Host "[4/7] Activating virtual environment..." -ForegroundColor Cyan
   . .\.venv\Scripts\Activate.ps1
 
-  Write-Host "[4/5] Syncing project dependencies with uv..." -ForegroundColor Cyan
+  Write-Host "[5/7] Syncing project dependencies with uv..." -ForegroundColor Cyan
   uv sync
 
-  Write-Host "[5/5] Verifying interpreter..." -ForegroundColor Cyan
+  Write-Host "[6/7] Verifying interpreter (should be uv-managed 3.12)..." -ForegroundColor Cyan
   python -V
+  python -c "import sys, platform; print(sys.executable); print(platform.python_implementation())"
+
+  Write-Host "[7/7] Where python?" -ForegroundColor Cyan
   where.exe python
 
   Write-Host "`nSetup complete! Next steps:" -ForegroundColor Green
