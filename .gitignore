@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+.env
+.dist-info/
+.eggs/
+build/
+dist/
+
+# PyInstaller
+*.spec
+
+# macOS
+.DS_Store
+
+# IDEs
+.vscode/

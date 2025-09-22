@@ -1,0 +1,33 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Local Gamepad Viewer — Phase 0</title>
+<link rel="stylesheet" href="/ui/styles/base.css" />
+
+<div class="container">
+  <header class="hdr">
+    <strong>Local Gamepad Viewer</strong>
+    <span class="pill">Phase 0</span>
+  </header>
+
+  <main class="stack">
+    <section class="card">
+      <h3>It works 🎉</h3>
+      <p>This is the Phase 0 bootstrap. FastAPI is serving this page.</p>
+      <ul>
+        <li><code>GET /healthz</code> should return <code>{"status":"ok"}</code>.</li>
+        <li>Static UI is mounted at <code>/ui/*</code>.</li>
+        <li>Next: Phase 1 (core/ module) and Phase 2 (API parity).</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h3>Quick links</h3>
+      <ul>
+        <li><a href="/healthz" target="_blank">/healthz</a></li>
+        <li><a href="/ui/pages/index.html" target="_blank">/ui/pages/index.html</a></li>
+      </ul>
+    </section>
+  </main>
+</div>
+
+<script src="/ui/scripts/app.js" type="module"></script>
