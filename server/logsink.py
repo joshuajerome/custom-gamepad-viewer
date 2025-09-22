@@ -1,4 +1,3 @@
-# server/logsink.py
 from loguru import logger
 import sys
 

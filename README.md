@@ -1,29 +1,23 @@
-# Local gamepadviewer
+# Local Gamepad Viewer — Phase 0
 
-## Windows Development
+Bootstrap dev environment (FastAPI + placeholder HTML UI).
 
-### Activate Python Dev Environment
+## Prereqs
+- Python 3.12+
+- Windows: PowerShell; macOS/Linux: bash/zsh
+- (Optional) [uv](https://github.com/astral-sh/uv)
 
-```ps
-./setup.ps1 --clean --build
+## One-time setup
+
+### Windows
+```powershell
+.\scripts\setup.ps1 -build
 ```
 
-### Deactive Python Dev Environment
+### MacOS/Linux
+chmod +x scripts/setup.sh
+./scripts/setup.sh --build
 
-```ps
-./setup.ps1 --clean
-```
-
-## MacOS Development
-
-### Activate Python Dev Environment
-
-```sh
-. scripts/setup.sh --clean --build
-```
-
-### Deactivate Python Dev Environment
-
-```sh
-. scripts/setup.sh --clean
-```
+### Run the dev server
+# within the venv
+python app_server.py

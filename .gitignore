@@ -1,17 +1,20 @@
 # Python
-**/__pycache__/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+.env
+.dist-info/
+.eggs/
+build/
+dist/
 
-# Virtual envs
-**/.venv/
+# PyInstaller
+*.spec
 
-# Gamepad Viewer slot state
-tmp/*
-
-# IDE/editor junk
-.vscode/
+# macOS
 .DS_Store
 
-# Builds
-dist/
-**.spec
-build/
+# IDEs
+.vscode/
