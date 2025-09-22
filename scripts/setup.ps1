@@ -3,7 +3,7 @@ param(
     [switch]$build
 )
 
-Set-Location -LiteralPath $PSScriptRoot
+Set-Location -LiteralPath (Resolve-Path "$PSScriptRoot\..")
 
 function Remove-IfExists {
     param([string]$Path)

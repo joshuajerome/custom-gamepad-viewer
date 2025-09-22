@@ -6,6 +6,8 @@
 
 $ErrorActionPreference = "Stop"
 
+Set-Location -LiteralPath (Resolve-Path "$PSScriptRoot\..")
+
 function Assert-Path($p) {
   if (-not (Test-Path $p)) {
     Write-Error "Required path not found: $p"
