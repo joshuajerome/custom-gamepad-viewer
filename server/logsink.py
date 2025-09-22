@@ -1,4 +1,4 @@
-# server/logging_setup.py
+# server/logsink.py
 from loguru import logger
 import sys
 
