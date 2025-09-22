@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
@@ -38,8 +38,8 @@ def create_app() -> FastAPI:
         return {"status": "ok"}
 
     # Root → serve UI page
-    @app.get("/", response_class=FileResponse)
-    async def index() -> FileResponse | PlainTextResponse:
+    @app.get("/")
+    async def index() -> Response:  # <-- annotate as Response (or omit annotation)
         index_html = UI_PAGES / "index.html"
         if not index_html.exists():
             return PlainTextResponse("Missing ui/pages/index.html", status_code=500)
