@@ -78,7 +78,7 @@ if ($build) {
 
   Write-Host "`nSetup complete! Next steps:" -ForegroundColor Green
   Write-Host "  .\.venv\Scripts\Activate.ps1"
-  Write-Host "  python app_server.py"
+  Write-Host "  python app.py"
 }
 
 if (-not $clean -and -not $build) {

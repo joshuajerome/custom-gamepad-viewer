@@ -82,7 +82,7 @@ if [ "$build" -eq 1 ]; then
   echo
   echo "Setup complete! Next steps:"
   echo "  source .venv/bin/activate"
-  echo "  python app_server.py"
+  echo "  python app.py"
 fi
 
 if [ "$clean" -eq 0 ] && [ "$build" -eq 0 ]; then
