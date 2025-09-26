@@ -1,3 +1,7 @@
+# Project metadata and dependencies.
+# Used by uv to create/sync the virtual environment and lock dependencies.
+# Dev tooling (pytest/ruff/mypy) is declared here for reproducible setups.
+
 [project]
 name = "local-gamepad-viewer"
 version = "0.0.1"

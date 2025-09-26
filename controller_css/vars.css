@@ -1,0 +1,19 @@
+/* (Bootstrap only) Static CSS variables for asset URLs.
+
+This file is a placeholder during early development. At runtime, the server
+generates /controller_css/vars.css dynamically based on the selected skin, so
+this static file can be removed once the dynamic endpoint is in use.
+*/
+
+:root{
+    --base: url("../themes/white/Base.png");
+    --disconnected: url("../themes/white/Disconnected.png");
+    --trigger: url("../themes/white/Trigger.png");
+    --bumper: url("../themes/white/Bumper.png");
+    --touchpad: url("../themes/white/Touchpad.png");
+    --meta: url("../themes/white/Meta.png");
+    --start: url("../themes/white/Start.png");
+    --face: url("../themes/white/Face.png");
+    --stick: url("../themes/white/Stick.png");
+    --dpad: url("../themes/white/Dpad.png");
+}

@@ -1,3 +1,7 @@
+# Windows setup script.
+# Installs uv if missing, sources uv's PowerShell shim, installs uv-managed
+# CPython, creates a clean .venv from that interpreter, and runs `uv sync`.
+
 param(
   [switch]$clean,
   [switch]$build

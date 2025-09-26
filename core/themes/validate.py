@@ -1,3 +1,9 @@
+"""Theme validation.
+
+Defines the required PNG filenames and validates a theme folder for presence of
+those files (dimension/rules can be added later). Returns a simple result model.
+"""
+
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path

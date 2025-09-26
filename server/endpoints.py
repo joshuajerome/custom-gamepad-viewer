@@ -1,3 +1,13 @@
+"""Core page endpoints.
+
+Defines lightweight routes for:
+  - GET /healthz      → service liveness
+  - GET /             → serves ui/pages/index.html
+  - GET /favicon.ico  → serves UI favicon if present
+
+UI/API endpoints are split for clarity; API routes live under server/api/.
+"""
+
 from __future__ import annotations
 from pathlib import Path
 from fastapi import APIRouter

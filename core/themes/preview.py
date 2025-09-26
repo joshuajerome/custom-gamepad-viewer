@@ -1,3 +1,9 @@
+"""Preview URL helpers.
+
+Builds Gamepad Viewer and local CSS URLs for embedding a live preview in the UI.
+Validation of player range (1..4) is handled here for convenience.
+"""
+
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
