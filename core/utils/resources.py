@@ -1,3 +1,9 @@
+"""Resource path resolution.
+
+Provides `repo_root()` that works in both dev and PyInstaller-frozen builds, and
+`resolve_resource()` to locate files relative to the application root.
+"""
+
 from __future__ import annotations
 import os
 import sys

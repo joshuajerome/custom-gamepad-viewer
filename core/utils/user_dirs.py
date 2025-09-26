@@ -1,3 +1,9 @@
+"""Per-OS user directories.
+
+Computes the app's data directory, user themes directory, and slot file path for
+Windows, macOS, and Linux following platform conventions.
+"""
+
 from __future__ import annotations
 import os
 import sys

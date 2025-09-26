@@ -1,3 +1,13 @@
+"""Theme discovery utilities.
+
+Finds available skins across sources in precedence order:
+  1) extra directories (CLI/UI-added)
+  2) per-user themes directory
+  3) built-in themes bundled with the app
+
+Returns stable (name, path, source) tuples for consumers.
+"""
+
 from __future__ import annotations
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple

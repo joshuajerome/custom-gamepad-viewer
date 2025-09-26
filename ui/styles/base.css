@@ -1,3 +1,9 @@
+/* Base UI styling.
+
+Defines colors, layout, and components for the control panel and preview shell.
+Keeps styles modular so other frontends can reuse the visual language.
+*/
+
 :root {
   color-scheme: light dark;
   --bg: #111827;

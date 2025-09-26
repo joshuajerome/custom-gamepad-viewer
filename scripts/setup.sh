@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# Cross-platform (macOS/Linux) setup script.
+# Installs uv if missing, sources uv's env shim, installs uv-managed CPython,
+# creates a clean .venv from uv's interpreter, and runs `uv sync`.
+
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
