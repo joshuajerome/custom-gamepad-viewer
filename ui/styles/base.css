@@ -1,60 +1,123 @@
-/* Base UI styling.
-
-Defines colors, layout, and components for the control panel and preview shell.
-Keeps styles modular so other frontends can reuse the visual language.
+/* Base UI styling (Phase 3).
+   Purpose: visual language and layout for the control panel + preview shell.
+   Notes: matches the 0.0.1 look/feel; uses CSS variables for quick theming.
 */
 
 :root {
-  color-scheme: light dark;
-  --bg: #111827;
-  --panel: #1f2937;
-  --text: #e5e7eb;
-  --muted: #9ca3af;
-  --border: #374151;
+  /* Theme tokens and preview geometry */
   --accent: #2563eb;
+  --bg: #1a1a1a;
+  --panel: #2a2a2a;
+  --text: #f0f0f0;
+  --muted: #aaa;
+  --scale: 0.60;    /* Preview scale: 60% of base GPV size */
+  --gpv-w: 1280px;  /* Base Gamepad Viewer width  */
+  --gpv-h: 720px;   /* Base Gamepad Viewer height */
 }
 
-* { box-sizing: border-box; }
-html, body { height: 100%; }
+/* Body — base typography, background, and text color */
 body {
   margin: 0;
-  font: 14px/1.5 system-ui, Segoe UI, Roboto, Arial, sans-serif;
+  font: 14px/1.4 system-ui, Segoe UI, Roboto, Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
 }
 
+/* Container — centers content with a comfortable max width */
 .container {
-  max-width: 960px;
+  max-width: 980px;
   margin: 0 auto;
-  padding: 16px;
 }
 
-.hdr {
+/* Header — app bar with title and quick links */
+header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #333;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 12px 0 8px;
-  border-bottom: 1px solid var(--border);
+  justify-content: space-between;
 }
 
-.pill {
-  font-size: 12px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 4px 8px;
-  color: var(--muted);
+/* Main — vertical stack of cards/content sections */
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  min-height: calc(100vh - 56px);
 }
 
-.stack { display: grid; gap: 16px; padding: 16px 0; }
-
+/* Card — panel with border, radius, and panel background */
 .card {
-  background: var(--panel);
-  border: 1px solid var(--border);
+  border: 1px solid #333;
   border-radius: 10px;
   padding: 14px;
+  background: var(--panel);
 }
 
-a { color: var(--accent); text-decoration: none; }
-a:hover { text-decoration: underline; }
-code { background: #0006; padding: 2px 6px; border-radius: 6px; }
+/* Row — grid container for labels + controls with gap */
+.row { display: grid; gap: 8px; margin-bottom: 12px; }
+
+/* Label — emphasize field labels */
+label { font-weight: 600; }
+
+/* Controls — consistent look for selects and buttons */
+select, button {
+  font: inherit;
+  color: var(--text);
+  background: #333;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+/* Focus — high-visibility focus ring using the accent color */
+select:focus, button:focus { outline: 2px solid var(--accent); }
+
+/* Buttons — hover/primary states for interactive affordances */
+.btn { cursor: pointer; transition: background-color .2s; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn:hover { background: #444; }
+.btn.primary:hover { background: #1e4ed8; }
+
+/* Kickers — inline link group in the header (aux actions) */
+.kickers { display:flex; gap:10px; flex-wrap:wrap; }
+.kickers a { text-decoration:none; color: var(--accent); }
+
+/* Muted — subtle, secondary text (tips/help) */
+.muted { opacity:.85; font-size:12px; color: var(--muted); }
+
+/* Preview wrap — frame around the scaled preview with dark chrome */
+.preview-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid #333;
+  background: #000;
+  padding: 6px;
+  width: calc(var(--gpv-w) * var(--scale) + 150px);
+  margin-inline: auto;
+}
+
+/* Preview scale — transform the base GPV canvas to desired size */
+.preview-scale {
+  transform: scale(var(--scale));
+  transform-origin: top left;
+  width: var(--gpv-w);
+  height: var(--gpv-h);
+}
+
+/* Controller IFRAME — GPV embed sized to avoid clipping offscreen bits */
+#gpv {
+  width: calc(var(--gpv-w) + 200px);
+  height: calc(var(--gpv-h) + 500px);
+  border: 0;
+  background: transparent;
+  display: block;
+}
+
+/* Responsive — tighter padding and full-width container on narrow viewports */
+@media (max-width: 720px) {
+  .container { max-width: 100%; }
+  main { padding: 12px; }
+}
