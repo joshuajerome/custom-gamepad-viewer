@@ -19,8 +19,8 @@ from core.themes.discovery import discover_all
 from core.themes.validate import REQUIRED_FILES, validate_theme_folder
 from server.state import AppState
 from server.storage.base import Storage
-from server.services.url import build_gpv_url
-from server.services.theme import build_vars_css
+from server.services.url_service import build_gpv_url
+from server.services.theme_service import build_vars_css
 
 def get_router(
     *,

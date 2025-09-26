@@ -7,33 +7,58 @@ refresh the live Gamepad Viewer preview.
 
 <!doctype html>
 <meta charset="utf-8" />
-<title>Local Gamepad Viewer — Phase 0</title>
-<link rel="icon" href="/ui/assets/favicon.png" type="image/svg+xml">
-<link rel="stylesheet" href="/ui/styles/base.css" />
+<title>Local Gamepad Viewer</title>
+<link rel="icon" href="/ui/assets/favicon.png">
+<link rel="stylesheet" href="/ui/styles/base.css">
 
 <div class="container">
-  <header class="hdr">
-    <strong>Local Gamepad Viewer</strong>
-    <span class="pill">Phase 0</span>
+  <header>
+    <div><b>Local Gamepad Viewer</b></div>
+    <nav class="kickers">
+      <a href="/ui/pages/check_slot.html" target="_blank">Check Slot</a>
+      <a id="link-gpv" href="#" target="_blank">Open in Gamepad Viewer</a>
+      <a href="/ui/pages/overlay.html" target="_blank">Overlay (no UI)</a>
+    </nav>
   </header>
 
-  <main class="stack">
+  <main>
     <section class="card">
-      <h3>It works 🎉</h3>
-      <p>This is the Phase 0 bootstrap. FastAPI is serving this page.</p>
-      <ul>
-        <li><code>GET /healthz</code> should return <code>{"status":"ok"}</code>.</li>
-        <li>Static UI is mounted at <code>/ui/*</code>.</li>
-        <li>Next: Phase 1 (core/ module) and Phase 2 (API parity).</li>
-      </ul>
+      <h3>Settings</h3>
+
+      <div class="row">
+        <label for="skin">Theme</label>
+        <select id="skin"></select>
+      </div>
+
+      <div class="row">
+        <label for="player">Player</label>
+        <select id="player">
+          <option value="1">P1</option>
+          <option value="2">P2</option>
+          <option value="3">P3</option>
+          <option value="4">P4</option>
+        </select>
+        <div class="muted">
+          Tip: open “Check Slot” and press a button; it will auto-save the active index and we’ll update here.
+        </div>
+      </div>
+
+      <div class="row actions">
+        <button class="btn primary" id="apply">Apply</button>
+        <button class="btn" id="refresh">Refresh Preview</button>
+      </div>
+
+      <div class="muted" id="status">Ready.</div>
     </section>
 
     <section class="card">
-      <h3>Quick links</h3>
-      <ul>
-        <li><a href="/healthz" target="_blank">/healthz</a></li>
-        <li><a href="/ui/pages/index.html" target="_blank">/ui/pages/index.html</a></li>
-      </ul>
+      <h3>Gamepad Viewer</h3>
+      <div class="preview-wrap">
+        <div class="preview-scale">
+          <iframe id="gpv" allow="gamepad *; clipboard-read; clipboard-write"></iframe>
+        </div>
+      </div>
+      <div class="muted" id="urls"></div>
     </section>
   </main>
 </div>

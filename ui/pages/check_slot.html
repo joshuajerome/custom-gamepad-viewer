@@ -1,0 +1,90 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Gamepad Slot Checker</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 14px/1.4 system-ui, Segoe UI, Roboto, sans-serif; margin: 24px; }
+  pre { padding: 12px; border: 1px solid #9993; border-radius: 8px; overflow:auto; }
+  .ok { color: green; }
+  .warn { color: orange; }
+  .err { color: crimson; }
+</style>
+
+<h2>Which slot am I?</h2>
+<p>Press any button or move a stick. The active index (0 = Player 1) will be posted to <code>/api/slot</code>.</p>
+
+<div id="status" class="warn">Waiting for input…</div>
+<pre id="out">No data yet.</pre>
+
+<script>
+const out = document.getElementById('out');
+const statusEl = document.getElementById('status');
+
+function dump(activeIdx = -1) {
+  const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
+  const lines = pads.map((g, i) => {
+    if (!g) return `[${i}] empty`;
+    const tag = (i === activeIdx) ? " <= ACTIVE" : "";
+    return `[${i}] id="${g.id}" mapping=${g.mapping||'none'} buttons=${g.buttons.length} axes=${g.axes.length}${tag}`;
+  });
+  out.textContent = lines.join('\n');
+}
+
+async function postIndex(index) {
+  try {
+    const res = await fetch('/api/slot', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ index })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    statusEl.textContent = `Saved: index ${data.index} => player p=${data.player}`;
+    statusEl.className = 'ok';
+    // Broadcast to other tabs (control panel / overlay)
+    localStorage.setItem('lgv_player', String(data.player));
+  } catch (e) {
+    statusEl.textContent = `Failed to save slot: ${e}`;
+    statusEl.className = 'err';
+  }
+}
+
+function maybePostActive() {
+  const pads = Array.from(navigator.getGamepads ? navigator.getGamepads() : []);
+  let active = -1;
+  pads.forEach((g, i) => {
+    if (!g) return;
+    const pressed = g.buttons && g.buttons.some(b => b && b.pressed);
+    const moved = g.axes && g.axes.some(a => Math.abs(a) > 0.18);
+    if ((pressed || moved) && active === -1) active = i;
+  });
+  dump(active);
+  if (active >= 0) postIndex(active);
+}
+
+window.addEventListener('gamepadconnected', e => {
+  statusEl.textContent = `Connected at index ${e.gamepad.index}: ${e.gamepad.id}`;
+  statusEl.className = 'ok'; dump(e.gamepad.index); postIndex(e.gamepad.index);
+});
+window.addEventListener('gamepaddisconnected', e => {
+  statusEl.textContent = `Disconnected index ${e.gamepad.index}: ${e.gamepad.id}`;
+  statusEl.className = 'warn'; dump();
+});
+
+// Poll for activity
+setInterval(maybePostActive, 120);
+
+// Show previously saved value
+(async () => {
+  try {
+    const r = await fetch('/api/slot');
+    if (r.ok) {
+      const j = await r.json();
+      if (j && Number.isInteger(j.index)) {
+        statusEl.textContent = `Previously saved: index ${j.index} => player p=${j.player}`;
+        statusEl.className = 'ok';
+      }
+    }
+  } catch {}
+})();
+</script>
