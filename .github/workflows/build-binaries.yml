@@ -1,0 +1,167 @@
+name: Build desktop executables (uv via setup scripts)
+
+on:
+  push:
+    branches: [ main, usr/**, rel/** ]
+    tags: [ 'v*.*.*' ]
+  workflow_dispatch: {}
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_NO_PROMPT: "1"
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ---------- WINDOWS ----------
+          - name: Windows (PyInstaller EXE)
+            os: windows-latest
+            shell: pwsh
+            artifact_suffix: -Windows.exe
+
+          # ---------- MACOS INTEL (x86_64) ----------
+          - name: macOS (Intel)
+            os: macos-13
+            shell: bash
+            zip_suffix: -macOS-Intel.zip
+
+          # ---------- MACOS APPLE SILICON (arm64) ----------
+          - name: macOS (Apple Silicon)
+            os: macos-14
+            shell: bash
+            zip_suffix: -macOS-ARM64.zip
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+
+      - name: Sanitize ref name
+        shell: bash
+        run: |
+          safe_ref="$(python - <<'PY'
+          import os, re
+          ref = os.environ.get("GITHUB_REF_NAME", "")
+          print(re.sub(r"[^A-Za-z0-9._-]", "-", ref))
+          PY
+          )"
+          echo "SAFE_REF=$safe_ref" >> "$GITHUB_ENV"  
+
+      # ---- WINDOWS SETUP & BUILD ----
+      - name: Setup & Build (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Dot-source so env (venv activation, PATH) persists within this step
+          . .\scripts\setup.ps1 -clean
+          . .\scripts\setup.ps1 -build
+
+          # Ensure PyInstaller is present (either dev-dep via uv sync or install now)
+          python -m ensurepip --upgrade
+          if (-not (Get-Command pyinstaller -ErrorAction SilentlyContinue)) {
+            python -m pip install pyinstaller
+          }
+
+          if (Test-Path packaging\gamepad.spec) {
+            pyinstaller packaging\gamepad.spec
+          } else {
+            pyinstaller --noconfirm --onefile `
+              --name "CustomGamepadViewer" `
+              --add-data "ui;ui" `
+              --add-data "controller_css;controller_css" `
+              --add-data "server/static;server/static" `
+              --add-data "themes;themes" `
+              app.py
+          }
+
+          # Determine artifact path (onefile vs onedir fallback)
+          $p1 = "dist\CustomGamepadViewer.exe"
+          $p2 = "dist\CustomGamepadViewer\CustomGamepadViewer.exe"
+          if (Test-Path $p1) {
+            "ARTIFACT=$p1" >> $env:GITHUB_ENV
+          } elseif (Test-Path $p2) {
+            "ARTIFACT=$p2" >> $env:GITHUB_ENV
+          } else {
+            throw "Windows artifact not found in dist\"
+          }
+
+      - name: Upload artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}-${{ env.SAFE_REF }}
+          path: ${{ env.ARTIFACT }}
+          if-no-files-found: error
+          retention-days: 14
+
+      # ---- MAC SETUP & BUILD ----
+      - name: Setup & Build (macOS)
+        if: startsWith(matrix.os, 'macos')
+        shell: bash
+        run: |
+          # Run setup script in its own shell, then activate the venv for this step
+          ./scripts/setup.sh --clean
+          ./scripts/setup.sh --build
+          source ./.venv/bin/activate
+
+          # Ensure PyInstaller is present (either dev-dep via uv sync or install now)
+          python -m ensurepip --upgrade
+          if ! command -v pyinstaller >/dev/null 2>&1; then
+            python -m pip install pyinstaller
+          fi
+
+          if [[ -f packaging/gamepad.spec ]]; then
+            pyinstaller packaging/gamepad.spec
+          else
+            pyinstaller --noconfirm --windowed \
+              --name "CustomGamepadViewer" \
+              --icon "packaging/macos/CustomGamepadViewer.icns" \
+              --add-data "ui:ui" \
+              --add-data "controller_css:controller_css" \
+              --add-data "server/static:server/static" \
+              --add-data "themes:themes" \
+              app.py
+          fi
+
+          # Zip .app for easier download; keep bundle metadata
+          cd dist
+          zip_name="CustomGamepadViewer${{ matrix.zip_suffix }}"
+          ditto -c -k --sequesterRsrc --keepParent "CustomGamepadViewer.app" "$zip_name"
+          echo "ARTIFACT=dist/$zip_name" >> "$GITHUB_ENV"
+
+      - name: Upload artifact (macOS)
+        if: startsWith(matrix.os, 'macos')
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}-${{ env.SAFE_REF }}
+          path: ${{ env.ARTIFACT }}
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Attach binaries to Release (tags only)
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: |
+            artifacts/**/*

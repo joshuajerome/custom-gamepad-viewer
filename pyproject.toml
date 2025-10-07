@@ -5,7 +5,7 @@
 [project]
 name = "local-gamepad-viewer"
 version = "0.0.1"
-description = "Local Gamepad Viewer — FastAPI backend + HTML UI (Phase 0 bootstrap)"
+description = "Custom Gamepad Viewer — A localized customizable gamepad viewer"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

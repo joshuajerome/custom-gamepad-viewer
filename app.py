@@ -1,4 +1,4 @@
-"""Application entrypoint.
+"""Application entrypoint for Custom Gamepad Viewer.
 
 Creates the FastAPI app, mounts static folders (/ui, /controller_css, /themes),
 initializes persistent storage (FileStore) and in-memory state (AppState),
@@ -15,6 +15,17 @@ Adds WsHub (WebSocket hub) for Phase 4 realtime sync. All API changes
 from __future__ import annotations
 import os
 from pathlib import Path
+import signal
+import sys
+import threading
+import time
+import multiprocessing
+from contextlib import suppress
+import socket
+import webbrowser
+import urllib.request
+import urllib.error
+from typing import Callable, Optional
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -50,6 +61,17 @@ VARS_CSS_HTTP = "/controller_css/vars.css"        # dynamic endpoint
 # --------------------------------------------------------------------------- #
 # Internal helpers
 # --------------------------------------------------------------------------- #
+
+_shutdown_callback: Optional[Callable[[], None]] = None
+
+def register_shutdown_callback(callback: Callable[[], None] | None) -> None:
+    global _shutdown_callback
+    _shutdown_callback = callback
+
+def trigger_shutdown_callback() -> None:
+    cb = _shutdown_callback
+    if cb:
+        cb()
 
 def _configure_logging() -> None:
     """Set up Loguru to log to stdout at INFO level."""
@@ -138,12 +160,216 @@ def create_app() -> FastAPI:
     _mount_controller_css(app, state)
     _include_routers(app, state, store, hub)
 
+    if getattr(sys, "frozen", False):
+        @app.post("/__internal/shutdown", include_in_schema=False)
+        async def _shutdown_endpoint():
+            trigger_shutdown_callback()
+            return {"status": "shutting_down"}
+
     return app
 
 
 if __name__ == "__main__":
     import uvicorn
+
     host = os.getenv("APP_HOST", "127.0.0.1")
     port = int(os.getenv("APP_PORT", "8000"))
-    logger.info(f"Starting dev server on http://{host}:{port}")
-    uvicorn.run("app:create_app", host=host, port=port, factory=True, reload=True)
+
+    reload_env = os.getenv("APP_RELOAD")
+    if reload_env is None:
+        reload_flag = not getattr(sys, "frozen", False)
+    else:
+        reload_flag = reload_env.lower() in {"1", "true", "yes", "on"}
+
+    mode = "dev (reload enabled)" if reload_flag else "packaged/prod (reload disabled)"
+    logger.info(f"Starting server on http://{host}:{port} [{mode}]")
+
+    if reload_flag:
+        uvicorn.run(
+            "app:create_app",
+            host=host,
+            port=port,
+            factory=True,
+            reload=True,
+        )
+    else:
+        def _run_packaged_server() -> int:
+            multiprocessing.freeze_support()
+
+            auto_open = os.getenv("APP_OPEN_BROWSER", "1").lower() in {"1", "true", "yes", "on"}
+
+            def _open_browser() -> None:
+                with suppress(Exception):
+                    webbrowser.open(f"http://{host}:{port}")
+
+            def _server_already_running() -> bool:
+                try:
+                    with socket.create_connection((host, port), timeout=0.6):
+                        return True
+                except OSError:
+                    return False
+
+            def _request_existing_shutdown() -> bool:
+                try:
+                    req = urllib.request.Request(
+                        url=f"http://{host}:{port}/__internal/shutdown",
+                        method="POST",
+                        data=b"{}",
+                        headers={"Content-Type": "application/json"},
+                    )
+                    urllib.request.urlopen(req, timeout=1.0)
+                    return True
+                except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ConnectionError, OSError):
+                    return False
+
+            def _wait_for_port_close(timeout: float = 5.0) -> bool:
+                deadline = time.perf_counter() + timeout
+                while time.perf_counter() < deadline:
+                    if not _server_already_running():
+                        return True
+                    time.sleep(0.1)
+                return not _server_already_running()
+
+            if _server_already_running():
+                logger.info("Detected existing Custom Gamepad Viewer server; requesting restart.")
+                requested_shutdown = _request_existing_shutdown()
+                if requested_shutdown:
+                    logger.info("Requested existing server shutdown; waiting for port to become available...")
+                    if not _wait_for_port_close(timeout=10.0):
+                        logger.error("Existing server did not shut down in time; aborting launch.")
+                        return 1
+                else:
+                    logger.warning("Existing server not responsive to shutdown request; aborting new launch.")
+                    return 1
+
+            app_instance = create_app()
+            config = uvicorn.Config(
+                app=app_instance,
+                host=host,
+                port=port,
+                log_level="info",
+                reload=False,
+                factory=False,
+            )
+            server = uvicorn.Server(config)
+            stop_event = threading.Event()
+
+            def _server_target() -> None:
+                try:
+                    server.run()
+                finally:
+                    stop_event.set()
+
+            def _request_stop() -> None:
+                server.should_exit = True
+                stop_event.set()
+
+            register_shutdown_callback(_request_stop)
+
+            server_thread = threading.Thread(target=_server_target, name="uvicorn-server", daemon=True)
+            server_thread.start()
+
+            start_deadline = time.perf_counter() + 10
+            while not server.started and server_thread.is_alive() and time.perf_counter() < start_deadline:
+                time.sleep(0.1)
+
+            if not server.started:
+                if server_thread.is_alive():
+                    logger.error("Uvicorn failed to start within timeout; exiting.")
+                else:
+                    logger.error("Uvicorn thread terminated before startup; exiting.")
+                register_shutdown_callback(None)
+                return 1
+
+            def _signal_handler(signum, frame):
+                logger.info(f"Received signal {signum}; shutting down server...")
+                server.should_exit = True
+                stop_event.set()
+
+            for sig in (signal.SIGINT, signal.SIGTERM):
+                with suppress(ValueError):
+                    signal.signal(sig, _signal_handler)
+
+            def _launch_control_window() -> bool:
+                try:
+                    import tkinter as tk  # type: ignore
+                except Exception as exc:  # pragma: no cover - environment without Tk
+                    logger.warning("tkinter unavailable (%s); running headless.", exc)
+                    return False
+
+                shutdown_initiated = False
+
+                def _trigger_shutdown() -> None:
+                    nonlocal shutdown_initiated
+                    if not shutdown_initiated:
+                        shutdown_initiated = True
+                        _request_stop()
+
+                root = tk.Tk()
+                root.title("Custom Gamepad Viewer")
+                root.geometry("380x180")
+                root.resizable(False, False)
+
+                label = tk.Label(
+                    root,
+                    text="Custom Gamepad Viewer is running.\n"
+                    "Use Open Viewer to relaunch the browser.\n"
+                    "Close this window or Quit Server to stop.",
+                    justify="center",
+                    padx=12,
+                    pady=12,
+                )
+                label.pack()
+
+                button_frame = tk.Frame(root, padx=12, pady=8)
+                button_frame.pack(padx=12, pady=8)
+
+                open_btn = tk.Button(button_frame, text="Open Viewer", width=16, command=_open_browser)
+                open_btn.grid(row=0, column=0, padx=6)
+
+                def _quit_action() -> None:
+                    _trigger_shutdown()
+                    root.quit()
+
+                quit_btn = tk.Button(button_frame, text="Quit Server", width=16, command=_quit_action)
+                quit_btn.grid(row=0, column=1, padx=(6, 12))
+
+                root.protocol("WM_DELETE_WINDOW", _quit_action)
+
+                if auto_open:
+                    root.after(200, _open_browser)
+
+                def _poll_stop() -> None:
+                    if stop_event.is_set():
+                        with suppress(Exception):
+                            root.quit()
+                        return
+                    root.after(250, _poll_stop)
+
+                root.after(250, _poll_stop)
+
+                try:
+                    root.mainloop()
+                finally:
+                    _trigger_shutdown()
+
+                return True
+
+            gui_started = _launch_control_window()
+
+            if not gui_started:
+                if auto_open:
+                    _open_browser()
+                try:
+                    while not stop_event.is_set():
+                        time.sleep(0.25)
+                except KeyboardInterrupt:
+                    logger.info("Keyboard interrupt received; shutting down.")
+                    _request_stop()
+
+            server_thread.join(timeout=5)
+            register_shutdown_callback(None)
+            return 0
+
+        exit_code = _run_packaged_server()
+        sys.exit(exit_code)

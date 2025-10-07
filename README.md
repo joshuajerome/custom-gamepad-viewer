@@ -1,4 +1,4 @@
-# Local Gamepad Viewer — Phase 0
+# Custom Gamepad Viewer — Phase 0
 
 Bootstrap dev environment (FastAPI + placeholder HTML UI).
 

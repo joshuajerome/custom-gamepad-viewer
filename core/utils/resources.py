@@ -10,9 +10,17 @@ import sys
 from pathlib import Path
 
 def _frozen_base() -> Path | None:
-    # PyInstaller onefile/onedir extraction dir
-    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
-        return Path(getattr(sys, "_MEIPASS"))
+    if getattr(sys, "frozen", False):
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            return Path(meipass)
+        executable_dir = Path(sys.executable).resolve().parent
+        if sys.platform == "darwin" and ".app/Contents/MacOS" in str(executable_dir):
+            if "Frameworks" in executable_dir.parts:
+                idx = executable_dir.parts.index("Frameworks")
+                return Path(*executable_dir.parts[:idx])
+            return executable_dir.parent
+        return executable_dir
     return None
 
 def repo_root() -> Path:

@@ -19,7 +19,9 @@ done
 
 remove_if_exists() {
   local p="$1"
-  [ -e "$p" ] && rm -rf "$p" && echo "Removed $p"
+  if [ -e "$p" ]; then
+    rm -rf "$p" && echo "Removed $p"
+  fi
 }
 
 ensure_uv() {
@@ -48,7 +50,7 @@ if [ "$clean" -eq 1 ]; then
   remove_if_exists ".venv"
   remove_if_exists "build"
   remove_if_exists "dist"
-  find . -type d -name "__pycache__" -prune -exec rm -rf {} +
+  find . -type d -name "__pycache__" -prune -exec rm -rf {} + || true
   rm -f ./*.spec
   echo "Clean complete."
 fi

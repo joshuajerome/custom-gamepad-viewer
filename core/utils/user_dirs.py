@@ -9,7 +9,7 @@ import os
 import sys
 from pathlib import Path
 
-APP_NAME = "LocalGamepadViewer"
+APP_NAME = "Custom Gamepad Viewer"
 
 def data_dir() -> Path:
     if sys.platform == "win32":

@@ -24,7 +24,8 @@ function Ensure-Uv {
   Write-Host "uv not found. Installing uv..." -ForegroundColor Yellow
   # Official installer (no admin). Installs into $HOME\.local\bin by default.
   # See: https://astral.sh/uv/docs/install/
-  Invoke-Expression (& { (Invoke-WebRequest -UseBasicParsing https://astral.sh/uv/install.ps1).Content })
+  $installScript = Invoke-WebRequest -UseBasicParsing https://astral.sh/uv/install.ps1
+  Invoke-Expression ([System.Text.Encoding]::UTF8.GetString($installScript.Content))
 
   # Make sure current session finds uv without re-opening the shell
   $userLocalBin = Join-Path $HOME ".local\bin"
