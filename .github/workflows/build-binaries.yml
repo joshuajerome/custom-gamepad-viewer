@@ -67,12 +67,8 @@ jobs:
 
           # Ensure PyInstaller is present (either dev-dep via uv sync or install now)
           python -m ensurepip --upgrade
-          python - <<'PY'
-          import subprocess, sys
-          import shutil
           # Pin a recent PyInstaller; avoids older stubs that can trip heuristics
-          subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'pyinstaller>=6.9,<7'])
-          PY
+          python -m pip install "pyinstaller>=6.9,<7"
 
           # Build as onedir with no UPX; avoid self-extracting onefile stub (Wacatac false-positive)
           pyinstaller --noconfirm --clean --noupx --onedir `
