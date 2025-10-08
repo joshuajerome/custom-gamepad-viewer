@@ -21,6 +21,7 @@ from server.state import AppState
 from server.storage.base import Storage
 from server.services.url_service import build_gpv_url
 from server.services.theme_service import build_vars_css
+from server.realtime.hub import WsHub
 
 def get_router(
     *,
@@ -29,7 +30,8 @@ def get_router(
     host: str,
     port: int,
     index_css_path: str,
-    themes_root_rel: str = "themes",  # mount root (served statically)
+    themes_root_rel: str = "themes",
+    hub: WsHub,
 ) -> APIRouter:
     router = APIRouter(prefix="/api")
 
@@ -87,6 +89,8 @@ def get_router(
             "gpv_url": build_gpv_url(host=host, port=port, player=cfg.player, index_css_path=index_css_path),
             "css_url": f"http://{host}:{port}/{index_css_path}",
         }
+        await hub.broadcast_json({"type": "config", "payload": payload})
+
         return JSONResponse(payload)
 
     # Dynamic vars.css

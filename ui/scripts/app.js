@@ -17,6 +17,25 @@ const urlsEl    = document.getElementById('urls');
 async function GET(url){ const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error(r.status); return r.json(); }
 async function POST(url, body){ const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); if(!r.ok) throw new Error(r.status); return r.json(); }
 
+function wsConnect() {
+  try {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${proto}://${location.host}/ws`);
+    ws.onmessage = (ev) => {
+      const msg = JSON.parse(ev.data || '{}');
+      if (msg.type === 'config' || msg.type === 'slot') {
+        GET('/api/config').then(cfg => {
+          selSkin.value   = cfg.skin;
+          selPlayer.value = String(cfg.player);
+          setPreviewIfChanged(cfg);
+          statusEl.textContent = `Live update → theme=${cfg.skin}, p${cfg.player}`;
+        }).catch(()=>{});
+      }
+    };
+    ws.onclose = () => setTimeout(wsConnect, 1500); // retry
+  } catch {}
+}
+
 function setPreviewIfChanged(cfg){
   if (frame.src !== cfg.gpv_url) frame.src = cfg.gpv_url;
   link.href = cfg.gpv_url;
@@ -91,3 +110,4 @@ window.addEventListener('storage', async (e)=>{
 });
 
 loadConfigOnce().catch(err => { statusEl.textContent = 'Init failed: ' + err; });
+wsConnect();

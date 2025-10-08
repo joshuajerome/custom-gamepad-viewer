@@ -9,21 +9,45 @@
 <script>
 const frame = document.getElementById('gpv');
 
-async function refresh() {
+async function refresh(force = false) {
   try {
     const r = await fetch('/api/config', { cache:'no-store' });
     if (!r.ok) return;
     const cfg = await r.json();
-    if (frame.src !== cfg.gpv_url) {
-      frame.src = cfg.gpv_url;
+
+    if (force) {
+      // Force GPV to re-fetch CSS (vars.css changed when theme changes)
+      const url = cfg.gpv_url + (cfg.gpv_url.includes('#') ? `&r=${Date.now()}` : `#r=${Date.now()}`);
+      frame.src = 'about:blank';
+      setTimeout(() => { frame.src = url; }, 30);
+    } else {
+      // Only change if URL differs (useful for first load / player change)
+      if (frame.src !== cfg.gpv_url) {
+        frame.src = cfg.gpv_url;
+      }
     }
   } catch {}
 }
 
+function wsConnect() {
+  try {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${proto}://${location.host}/ws`);
+
+    ws.onmessage = (ev) => {
+      // Regardless of what changed (skin or player), force a reload so GPV refetches CSS
+      refresh(true);
+    };
+
+    ws.onclose = () => setTimeout(wsConnect, 1500);
+  } catch {}
+}
+
+// Also react to localStorage broadcasts from other tabs
 window.addEventListener('storage', (e) => {
-  if (e.key === 'lgv_player' || e.key === 'lgv_skin') refresh();
+  if (e.key === 'lgv_player' || e.key === 'lgv_skin') refresh(true);
 });
 
-// initial load
-refresh();
+wsConnect();
+refresh(); // initial load
 </script>
