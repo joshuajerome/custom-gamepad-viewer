@@ -62,6 +62,78 @@ VARS_CSS_HTTP = "/controller_css/vars.css"        # dynamic endpoint
 # Internal helpers
 # --------------------------------------------------------------------------- #
 
+def _resolve_windows_ico_path() -> Optional[str]:
+    if os.name != "nt":
+        return None
+    try:
+        exe_dir = Path(getattr(sys, "executable", "")).parent
+        cand = exe_dir / "CustomGamepadViewer.ico"
+        if cand.exists():
+            return str(cand)
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            cand2 = Path(meipass) / "CustomGamepadViewer.ico"
+            if cand2.exists():
+                return str(cand2)
+        here = Path(__file__).parent / "CustomGamepadViewer.ico"
+        if here.exists():
+            return str(here)
+        dev = Path(__file__).parent / "packaging" / "windows" / "CustomGamepadViewer.ico"
+        if dev.exists():
+            return str(dev)
+    except Exception:
+        return None
+    return None
+
+def _configure_windows_taskbar_icon() -> None:
+    if os.name != "nt":
+        return
+    try:
+        import ctypes  # type: ignore
+        ico = _resolve_windows_ico_path()
+        # AppUserModelID for correct taskbar grouping
+        with suppress(Exception):
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("LocalGamepadViewer.CustomGamepadViewer")
+
+        # Make the process DPI aware before any windows are created to avoid blurry icons/text on HiDPI
+        with suppress(Exception):
+            # Try Per-Monitor v2 first (Windows 10+), then fall back
+            try:
+                ctypes.windll.shcore.SetProcessDpiAwareness(2)  # PROCESS_PER_MONITOR_DPI_AWARE
+            except Exception:
+                ctypes.windll.user32.SetProcessDPIAware()
+
+        hwnd = None
+        with suppress(Exception):
+            hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+        if hwnd and ico:
+            WM_SETICON, ICON_SMALL, ICON_BIG = 0x0080, 0, 1
+            LR_LOADFROMFILE, LR_DEFAULTSIZE, IMAGE_ICON = 0x10, 0x40, 1
+
+            # Load icons at the system's preferred sizes for best quality
+            SM_CXICON, SM_CYICON = 11, 12
+            SM_CXSMICON, SM_CYSMICON = 49, 50
+            cx_big = ctypes.windll.user32.GetSystemMetrics(SM_CXICON)
+            cy_big = ctypes.windll.user32.GetSystemMetrics(SM_CYICON)
+            cx_small = ctypes.windll.user32.GetSystemMetrics(SM_CXSMICON)
+            cy_small = ctypes.windll.user32.GetSystemMetrics(SM_CYSMICON)
+
+            hicon_big = ctypes.windll.user32.LoadImageW(0, ico, IMAGE_ICON, cx_big, cy_big, LR_LOADFROMFILE)
+            hicon_small = ctypes.windll.user32.LoadImageW(0, ico, IMAGE_ICON, cx_small, cy_small, LR_LOADFROMFILE)
+
+            # Fallback to default size if specific loads failed
+            if not hicon_big:
+                hicon_big = ctypes.windll.user32.LoadImageW(0, ico, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
+            if not hicon_small:
+                hicon_small = ctypes.windll.user32.LoadImageW(0, ico, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
+
+            if hicon_big:
+                ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon_big)
+            if hicon_small:
+                ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon_small)
+    except Exception:
+        pass
+
 _shutdown_callback: Optional[Callable[[], None]] = None
 
 def register_shutdown_callback(callback: Callable[[], None] | None) -> None:
@@ -151,6 +223,7 @@ def _include_routers(app: FastAPI, state: AppState, store: FileStore, hub: WsHub
 def create_app() -> FastAPI:
     """Factory: assemble and return the FastAPI application."""
     _configure_logging()
+    _configure_windows_taskbar_icon()
     app = FastAPI(title="Local Gamepad Viewer (Phase 4)")
 
     _configure_cache_headers(app)
@@ -306,6 +379,14 @@ if __name__ == "__main__":
                         _request_stop()
 
                 root = tk.Tk()
+                # Set window icon on Windows
+                if os.name == "nt":
+                    try:
+                        ico = _resolve_windows_ico_path()
+                        if ico:
+                            root.iconbitmap(default=ico)
+                    except Exception:
+                        pass
                 root.title("Custom Gamepad Viewer")
                 root.geometry("380x180")
                 root.resizable(False, False)
