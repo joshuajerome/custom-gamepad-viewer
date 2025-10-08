@@ -94,16 +94,43 @@ def _configure_windows_taskbar_icon() -> None:
         # AppUserModelID for correct taskbar grouping
         with suppress(Exception):
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("LocalGamepadViewer.CustomGamepadViewer")
+
+        # Make the process DPI aware before any windows are created to avoid blurry icons/text on HiDPI
+        with suppress(Exception):
+            # Try Per-Monitor v2 first (Windows 10+), then fall back
+            try:
+                ctypes.windll.shcore.SetProcessDpiAwareness(2)  # PROCESS_PER_MONITOR_DPI_AWARE
+            except Exception:
+                ctypes.windll.user32.SetProcessDPIAware()
+
         hwnd = None
         with suppress(Exception):
             hwnd = ctypes.windll.kernel32.GetConsoleWindow()
         if hwnd and ico:
             WM_SETICON, ICON_SMALL, ICON_BIG = 0x0080, 0, 1
             LR_LOADFROMFILE, LR_DEFAULTSIZE, IMAGE_ICON = 0x10, 0x40, 1
-            hicon = ctypes.windll.user32.LoadImageW(0, ico, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
-            if hicon:
-                ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
-                ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+
+            # Load icons at the system's preferred sizes for best quality
+            SM_CXICON, SM_CYICON = 11, 12
+            SM_CXSMICON, SM_CYSMICON = 49, 50
+            cx_big = ctypes.windll.user32.GetSystemMetrics(SM_CXICON)
+            cy_big = ctypes.windll.user32.GetSystemMetrics(SM_CYICON)
+            cx_small = ctypes.windll.user32.GetSystemMetrics(SM_CXSMICON)
+            cy_small = ctypes.windll.user32.GetSystemMetrics(SM_CYSMICON)
+
+            hicon_big = ctypes.windll.user32.LoadImageW(0, ico, IMAGE_ICON, cx_big, cy_big, LR_LOADFROMFILE)
+            hicon_small = ctypes.windll.user32.LoadImageW(0, ico, IMAGE_ICON, cx_small, cy_small, LR_LOADFROMFILE)
+
+            # Fallback to default size if specific loads failed
+            if not hicon_big:
+                hicon_big = ctypes.windll.user32.LoadImageW(0, ico, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
+            if not hicon_small:
+                hicon_small = ctypes.windll.user32.LoadImageW(0, ico, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
+
+            if hicon_big:
+                ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon_big)
+            if hicon_small:
+                ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon_small)
     except Exception:
         pass
 
