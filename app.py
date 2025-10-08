@@ -62,6 +62,51 @@ VARS_CSS_HTTP = "/controller_css/vars.css"        # dynamic endpoint
 # Internal helpers
 # --------------------------------------------------------------------------- #
 
+def _resolve_windows_ico_path() -> Optional[str]:
+    if os.name != "nt":
+        return None
+    try:
+        exe_dir = Path(getattr(sys, "executable", "")).parent
+        cand = exe_dir / "CustomGamepadViewer.ico"
+        if cand.exists():
+            return str(cand)
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            cand2 = Path(meipass) / "CustomGamepadViewer.ico"
+            if cand2.exists():
+                return str(cand2)
+        here = Path(__file__).parent / "CustomGamepadViewer.ico"
+        if here.exists():
+            return str(here)
+        dev = Path(__file__).parent / "packaging" / "windows" / "CustomGamepadViewer.ico"
+        if dev.exists():
+            return str(dev)
+    except Exception:
+        return None
+    return None
+
+def _configure_windows_taskbar_icon() -> None:
+    if os.name != "nt":
+        return
+    try:
+        import ctypes  # type: ignore
+        ico = _resolve_windows_ico_path()
+        # AppUserModelID for correct taskbar grouping
+        with suppress(Exception):
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("LocalGamepadViewer.CustomGamepadViewer")
+        hwnd = None
+        with suppress(Exception):
+            hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+        if hwnd and ico:
+            WM_SETICON, ICON_SMALL, ICON_BIG = 0x0080, 0, 1
+            LR_LOADFROMFILE, LR_DEFAULTSIZE, IMAGE_ICON = 0x10, 0x40, 1
+            hicon = ctypes.windll.user32.LoadImageW(0, ico, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
+            if hicon:
+                ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
+                ctypes.windll.user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+    except Exception:
+        pass
+
 _shutdown_callback: Optional[Callable[[], None]] = None
 
 def register_shutdown_callback(callback: Callable[[], None] | None) -> None:
@@ -151,6 +196,7 @@ def _include_routers(app: FastAPI, state: AppState, store: FileStore, hub: WsHub
 def create_app() -> FastAPI:
     """Factory: assemble and return the FastAPI application."""
     _configure_logging()
+    _configure_windows_taskbar_icon()
     app = FastAPI(title="Local Gamepad Viewer (Phase 4)")
 
     _configure_cache_headers(app)
@@ -306,6 +352,14 @@ if __name__ == "__main__":
                         _request_stop()
 
                 root = tk.Tk()
+                # Set window icon on Windows
+                if os.name == "nt":
+                    try:
+                        ico = _resolve_windows_ico_path()
+                        if ico:
+                            root.iconbitmap(default=ico)
+                    except Exception:
+                        pass
                 root.title("Custom Gamepad Viewer")
                 root.geometry("380x180")
                 root.resizable(False, False)
