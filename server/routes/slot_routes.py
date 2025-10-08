@@ -13,8 +13,9 @@ from fastapi.responses import JSONResponse
 
 from server.state import AppState
 from server.storage.base import Storage
+from server.realtime.hub import WsHub
 
-def get_router(*, state: AppState, storage: Storage) -> APIRouter:
+def get_router(*, state: AppState, storage: Storage, hub: WsHub) -> APIRouter:
     router = APIRouter(prefix="/api")
 
     @router.get("/slot")
@@ -34,6 +35,9 @@ def get_router(*, state: AppState, storage: Storage) -> APIRouter:
         # update state player
         if payload.get("player"):
             state.set_player(int(payload["player"]))
+
+        await hub.broadcast_json({"type": "slot", "payload": payload})
+
         return JSONResponse(payload)
 
     return router
