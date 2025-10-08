@@ -73,6 +73,7 @@ jobs:
           # Build as onedir with no UPX; avoid self-extracting onefile stub (Wacatac false-positive)
           pyinstaller --noconfirm --clean --noupx --onedir `
             --name "CustomGamepadViewer" `
+            --icon "packaging\windows\CustomGamepadViewer.ico" `
             --add-data "ui;ui" `
             --add-data "controller_css;controller_css" `
             --add-data "server/static;server/static" `
