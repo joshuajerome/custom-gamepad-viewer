@@ -67,32 +67,29 @@ jobs:
 
           # Ensure PyInstaller is present (either dev-dep via uv sync or install now)
           python -m ensurepip --upgrade
-          if (-not (Get-Command pyinstaller -ErrorAction SilentlyContinue)) {
-            python -m pip install pyinstaller
-          }
+          python - <<'PY'
+          import subprocess, sys
+          import shutil
+          # Pin a recent PyInstaller; avoids older stubs that can trip heuristics
+          subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'pyinstaller>=6.9,<7'])
+          PY
 
-          if (Test-Path packaging\gamepad.spec) {
-            pyinstaller packaging\gamepad.spec
-          } else {
-            pyinstaller --noconfirm --onefile `
-              --name "CustomGamepadViewer" `
-              --add-data "ui;ui" `
-              --add-data "controller_css;controller_css" `
-              --add-data "server/static;server/static" `
-              --add-data "themes;themes" `
-              app.py
-          }
+          # Build as onedir with no UPX; avoid self-extracting onefile stub (Wacatac false-positive)
+          pyinstaller --noconfirm --clean --noupx --onedir `
+            --name "CustomGamepadViewer" `
+            --add-data "ui;ui" `
+            --add-data "controller_css;controller_css" `
+            --add-data "server/static;server/static" `
+            --add-data "themes;themes" `
+            app.py
 
-          # Determine artifact path (onefile vs onedir fallback)
-          $p1 = "dist\CustomGamepadViewer.exe"
-          $p2 = "dist\CustomGamepadViewer\CustomGamepadViewer.exe"
-          if (Test-Path $p1) {
-            "ARTIFACT=$p1" >> $env:GITHUB_ENV
-          } elseif (Test-Path $p2) {
-            "ARTIFACT=$p2" >> $env:GITHUB_ENV
-          } else {
-            throw "Windows artifact not found in dist\"
-          }
+          # Zip the onedir folder for easier distribution
+          $folder = "dist\CustomGamepadViewer"
+          if (-not (Test-Path $folder)) { throw "Onedir folder not found: $folder" }
+          $zipPath = "dist\CustomGamepadViewer-Windows.zip"
+          if (Test-Path $zipPath) { Remove-Item -Force $zipPath }
+          Compress-Archive -Path "$folder\*" -DestinationPath $zipPath
+          "ARTIFACT=$zipPath" >> $env:GITHUB_ENV
 
       - name: Upload artifact (Windows)
         if: runner.os == 'Windows'
