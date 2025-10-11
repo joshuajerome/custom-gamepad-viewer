@@ -6,18 +6,25 @@ methods required by the server. Enables swapping FileStore with other backends
 """
 
 from __future__ import annotations
-from typing import Protocol, TypedDict
+from typing import NotRequired, Protocol, TypedDict
 
 class SlotPayload(TypedDict):
     index: int | None
     player: int | None
 
-class ConfigPayload(TypedDict):
+class LauncherSettingsPayload(TypedDict, total=False):
+    host: str
+    port: int
+    hotkey: str
+
+class ConfigPayload(TypedDict, total=False):
     skin: str
     player: int
+    launcher: NotRequired[LauncherSettingsPayload]
 
 class Storage(Protocol):
     def read_slot(self) -> SlotPayload: ...
     def write_slot(self, index: int) -> SlotPayload: ...
     def read_config(self) -> ConfigPayload | None: ...
     def write_config(self, skin: str, player: int) -> ConfigPayload: ...
+    def write_launcher_settings(self, launcher: LauncherSettingsPayload) -> ConfigPayload: ...

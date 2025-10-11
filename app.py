@@ -162,13 +162,31 @@ def _configure_cache_headers(app: FastAPI) -> None:
         return resp
 
 
+def _create_store() -> FileStore:
+    """Instantiate the JSON-backed FileStore."""
+    slot_path = slot_file_path()
+    config_path = DATA_DIR / "config.json"
+    return FileStore(slot_path=slot_path, config_path=config_path)
+
+
+
+
+def _load_launcher_settings(store: FileStore, default_host: str, default_port: int) -> tuple[str, int, str]:
+    cfg = store.read_config() or {}
+    launcher = cfg.get("launcher", {}) or {}
+    host = str(launcher.get("host", default_host))
+    try:
+        port = int(launcher.get("port", default_port))
+    except (TypeError, ValueError):
+        port = default_port
+    hotkey = str(launcher.get("hotkey", "F2")) or "F2"
+    return host, port, hotkey
+
 def _init_storage_and_state() -> tuple[FileStore, AppState]:
     """Create FileStore for persistence and initialize AppState from disk."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    slot_path = slot_file_path()
-    config_path = DATA_DIR / "config.json"
-    store = FileStore(slot_path=slot_path, config_path=config_path)
+    store = _create_store()
 
     persisted = store.read_config()
     init_skin = (persisted["skin"] if persisted else "white")
@@ -271,13 +289,24 @@ if __name__ == "__main__":
 
             auto_open = os.getenv("APP_OPEN_BROWSER", "1").lower() in {"1", "true", "yes", "on"}
 
+            store = _create_store()
+            host_value = host
+            port_value = port
+            stored_host, stored_port, stored_hotkey = _load_launcher_settings(store, host_value, port_value)
+            if os.getenv("APP_HOST") is None:
+                host_value = stored_host
+            if os.getenv("APP_PORT") is None:
+                port_value = stored_port
+            os.environ["APP_HOST"] = host_value
+            os.environ["APP_PORT"] = str(port_value)
+
             def _open_browser() -> None:
                 with suppress(Exception):
-                    webbrowser.open(f"http://{host}:{port}")
+                    webbrowser.open(f"http://{host_value}:{port_value}")
 
             def _server_already_running() -> bool:
                 try:
-                    with socket.create_connection((host, port), timeout=0.6):
+                    with socket.create_connection((host_value, port_value), timeout=0.6):
                         return True
                 except OSError:
                     return False
@@ -285,7 +314,7 @@ if __name__ == "__main__":
             def _request_existing_shutdown() -> bool:
                 try:
                     req = urllib.request.Request(
-                        url=f"http://{host}:{port}/__internal/shutdown",
+                        url=f"http://{host_value}:{port_value}/__internal/shutdown",
                         method="POST",
                         data=b"{}",
                         headers={"Content-Type": "application/json"},
@@ -318,8 +347,8 @@ if __name__ == "__main__":
             app_instance = create_app()
             config = uvicorn.Config(
                 app=app_instance,
-                host=host,
-                port=port,
+                host=host_value,
+                port=port_value,
                 log_level="info",
                 reload=False,
                 factory=False,
@@ -436,7 +465,28 @@ if __name__ == "__main__":
 
                 return True
 
-            gui_started = _launch_control_window()
+            gui_started = False
+            try:
+                from server.runtime.nicegui_launcher import run_launcher_ui
+            except Exception as exc:
+                logger.exception("NiceGUI launcher unavailable; falling back to Tk window.", exc_info=exc)
+            else:
+                try:
+                    run_launcher_ui(
+                        store=store,
+                        host=host_value,
+                        port=port_value,
+                        hotkey=stored_hotkey,
+                        auto_open=auto_open,
+                        open_browser=_open_browser,
+                        request_stop=_request_stop,
+                    )
+                    gui_started = True
+                except Exception as exc:
+                    logger.exception("NiceGUI launcher failed; falling back to Tk window.", exc_info=exc)
+
+            if not gui_started:
+                gui_started = _launch_control_window()
 
             if not gui_started:
                 if auto_open:
