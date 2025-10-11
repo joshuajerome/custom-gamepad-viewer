@@ -288,6 +288,8 @@ if __name__ == "__main__":
             multiprocessing.freeze_support()
 
             auto_open = os.getenv("APP_OPEN_BROWSER", "1").lower() in {"1", "true", "yes", "on"}
+            # Allow disabling the NiceGUI native launcher if it causes issues in certain environments
+            use_native_launcher = os.getenv("APP_NATIVE_LAUNCHER", "1").lower() in {"1", "true", "yes", "on"}
 
             store = _create_store()
             host_value = host
@@ -466,24 +468,28 @@ if __name__ == "__main__":
                 return True
 
             gui_started = False
-            try:
-                from server.runtime.nicegui_launcher import run_launcher_ui
-            except Exception as exc:
-                logger.exception("NiceGUI launcher unavailable; falling back to Tk window.", exc_info=exc)
-            else:
+            if use_native_launcher:
+                # Prefer Edge WebView2 backend on Windows to avoid pythonnet/WinForms issues in packaged builds
+                if os.name == "nt" and not os.getenv("PYWEBVIEW_GUI"):
+                    os.environ["PYWEBVIEW_GUI"] = "edgechromium"
                 try:
-                    run_launcher_ui(
-                        store=store,
-                        host=host_value,
-                        port=port_value,
-                        hotkey=stored_hotkey,
-                        auto_open=auto_open,
-                        open_browser=_open_browser,
-                        request_stop=_request_stop,
-                    )
-                    gui_started = True
+                    from server.runtime.nicegui_launcher import run_launcher_ui
                 except Exception as exc:
-                    logger.exception("NiceGUI launcher failed; falling back to Tk window.", exc_info=exc)
+                    logger.exception("NiceGUI launcher unavailable; falling back to Tk window.", exc_info=exc)
+                else:
+                    try:
+                        run_launcher_ui(
+                            store=store,
+                            host=host_value,
+                            port=port_value,
+                            hotkey=stored_hotkey,
+                            auto_open=auto_open,
+                            open_browser=_open_browser,
+                            request_stop=_request_stop,
+                        )
+                        gui_started = True
+                    except Exception as exc:
+                        logger.exception("NiceGUI launcher failed; falling back to Tk window.", exc_info=exc)
 
             if not gui_started:
                 gui_started = _launch_control_window()
