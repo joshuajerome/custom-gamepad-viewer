@@ -78,7 +78,7 @@ jobs:
             --add-data "controller_css;controller_css" `
             --add-data "server/static;server/static" `
             --add-data "themes;themes" `
-            --collect-all nicegui `
+            --collect-data nicegui `
             --add-data "packaging\\windows\\CustomGamepadViewer.ico;." `
             app.py
 
@@ -125,7 +125,7 @@ jobs:
               --add-data "controller_css:controller_css" \
               --add-data "server/static:server/static" \
               --add-data "themes:themes" \
-              --collect-all nicegui \
+              --collect-data nicegui \
               app.py
           fi
 
