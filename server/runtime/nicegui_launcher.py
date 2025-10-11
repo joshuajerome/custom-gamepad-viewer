@@ -156,7 +156,7 @@ def run_launcher_ui(
                         request_stop()
                         with suppress(Exception):
                             nice_app.native.main_window.close()  # type: ignore[attr-defined]
-                        ui.shutdown()
+                        nice_app.shutdown()
 
                     ui.button("Quit Server", on_click=_quit_server).props("color=negative")
 
