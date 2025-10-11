@@ -3,7 +3,8 @@
 
 param(
   [switch]$Clean,
-  [switch]$OneFile,
+  [switch]$OneFile,    # optional: force onefile
+  [switch]$Onedir,     # optional: force onedir
   [string]$Name = "CustomGamepadViewer"
 )
 
@@ -67,7 +68,11 @@ $argsList = @(
 # Avoid UPX by default (can trigger AV heuristics)
 $argsList += "--noupx"
 
-if ($OneFile) { $argsList += "--onefile" } else { $argsList += "--onedir" }
+# Choose onefile by default unless explicitly overridden
+$useOneFile = $true
+if ($Onedir) { $useOneFile = $false }
+if ($OneFile) { $useOneFile = $true }
+if ($useOneFile) { $argsList += "--onefile" } else { $argsList += "--onedir" }
 
 $argsList += @(
   "--name", $Name
@@ -103,8 +108,7 @@ $argsList += "app.py"
 Write-Host "Running: pyinstaller $($argsList -join ' ')" -ForegroundColor Green
 pyinstaller @argsList
 
-Write-Host "\nBuild complete. See: dist\$Name" -ForegroundColor Green
-if (-not $OneFile) {
+Write-Host "\nBuild complete. See: dist\$Name$([bool]$useOneFile -replace '^True$','.exe' -replace '^False$','')" -ForegroundColor Green
+if (-not $useOneFile) {
   Write-Host "Tip: pass -OneFile to create a single EXE (larger startup stub)." -ForegroundColor DarkGray
 }
-

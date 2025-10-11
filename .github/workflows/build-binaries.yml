@@ -70,8 +70,8 @@ jobs:
           # Pin a recent PyInstaller; avoids older stubs that can trip heuristics
           python -m pip install "pyinstaller>=6.9,<7"
 
-          # Build as onedir with no UPX; avoid self-extracting onefile stub (Wacatac false-positive)
-          pyinstaller --noconfirm --clean --noupx --onedir `
+          # Build as onefile (single EXE); keep NO UPX to reduce AV flags
+          pyinstaller --noconfirm --clean --noupx --onefile `
             --name "CustomGamepadViewer" `
             --icon "packaging\windows\CustomGamepadViewer.ico" `
             --add-data "ui;ui" `
@@ -82,13 +82,10 @@ jobs:
             --add-data "packaging\\windows\\CustomGamepadViewer.ico;." `
             app.py
 
-          # Zip the onedir folder for easier distribution
-          $folder = "dist\CustomGamepadViewer"
-          if (-not (Test-Path $folder)) { throw "Onedir folder not found: $folder" }
-          $zipPath = "dist\CustomGamepadViewer-Windows.zip"
-          if (Test-Path $zipPath) { Remove-Item -Force $zipPath }
-          Compress-Archive -Path "$folder\*" -DestinationPath $zipPath
-          "ARTIFACT=$zipPath" >> $env:GITHUB_ENV
+          # Upload the single EXE directly
+          $exePath = "dist\CustomGamepadViewer.exe"
+          if (-not (Test-Path $exePath)) { throw "EXE not found: $exePath" }
+          "ARTIFACT=$exePath" >> $env:GITHUB_ENV
 
       - name: Upload artifact (Windows)
         if: runner.os == 'Windows'
