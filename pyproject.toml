@@ -12,6 +12,7 @@ dependencies = [
   "fastapi>=0.115.0",
   "uvicorn[standard]>=0.30.0",
   "loguru>=0.7.2",
+  "nicegui>=1.4.17",
 ]
 
 [tool.uv]  # optional if you use uv; harmless otherwise

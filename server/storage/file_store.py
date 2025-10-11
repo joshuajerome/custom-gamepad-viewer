@@ -12,7 +12,7 @@ import os
 import time
 from typing import Optional
 
-from server.storage.base import Storage, SlotPayload, ConfigPayload
+from server.storage.base import Storage, SlotPayload, ConfigPayload, LauncherSettingsPayload
 
 class FileStore(Storage):
     def __init__(self, slot_path: Path, config_path: Path):
@@ -64,7 +64,23 @@ class FileStore(Storage):
 
     def write_config(self, skin: str, player: int) -> ConfigPayload:
         payload: ConfigPayload = {"skin": skin, "player": int(player)}
+        existing = self.read_config() or {}
+        if launcher := existing.get("launcher"):
+            payload["launcher"] = launcher  # type: ignore[index]
         data = json.dumps(payload, indent=2).encode("utf-8")
         with self._lock:
             self._atomic_write(self.config_path, data)
         return payload
+
+    def write_launcher_settings(self, launcher: LauncherSettingsPayload) -> ConfigPayload:
+        with self._lock:
+            payload: ConfigPayload = self.read_config() or {"skin": "white", "player": 1}
+            existing = payload.get("launcher", {}) or {}
+            payload["launcher"] = {
+                "host": launcher.get("host", existing.get("host", "127.0.0.1")),
+                "port": int(launcher.get("port", existing.get("port", 8000))),
+                "hotkey": launcher.get("hotkey", existing.get("hotkey", "F2")),
+            }
+            data = json.dumps(payload, indent=2).encode("utf-8")
+            self._atomic_write(self.config_path, data)
+            return payload
