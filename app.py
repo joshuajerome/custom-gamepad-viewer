@@ -146,9 +146,45 @@ def trigger_shutdown_callback() -> None:
         cb()
 
 def _configure_logging() -> None:
-    """Set up Loguru to log to stdout at INFO level."""
+    """Set up Loguru with safe sinks when no console is available (windowed EXE)."""
     logger.remove()
-    logger.add(lambda m: print(m, end=""), level="INFO")
+    try:
+        if getattr(sys, "stderr", None) and hasattr(sys.stderr, "write"):
+            logger.add(sys.stderr, level="INFO")
+        elif getattr(sys, "stdout", None) and hasattr(sys.stdout, "write"):
+            logger.add(sys.stdout, level="INFO")
+        else:
+            # Fall back to a rotating file in the data directory
+            log_path = DATA_DIR / "app.log"
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            logger.add(str(log_path), level="INFO", rotation="512 KB", retention=3)
+    except Exception:
+        # Last resort: silence logging if sinks fail
+        pass
+
+
+def _uvicorn_safe_log_config() -> dict:
+    """Return a minimal logging config that avoids accessing sys.stdout/.stderr.
+
+    In windowed PyInstaller onefile builds, std streams can be None. Uvicorn's
+    default formatter inspects stream.isatty() and crashes. We attach NullHandler
+    to uvicorn loggers to avoid that while the app runs in GUI mode.
+    """
+    return {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "plain": {"()": "logging.Formatter", "format": "%(message)s"},
+        },
+        "handlers": {
+            "null": {"class": "logging.NullHandler"},
+        },
+        "loggers": {
+            "uvicorn": {"handlers": ["null"], "level": "INFO", "propagate": False},
+            "uvicorn.error": {"handlers": ["null"], "level": "INFO", "propagate": False},
+            "uvicorn.access": {"handlers": ["null"], "level": "INFO", "propagate": False},
+        },
+    }
 
 
 def _configure_cache_headers(app: FastAPI) -> None:
@@ -347,6 +383,14 @@ if __name__ == "__main__":
                     return 1
 
             app_instance = create_app()
+            # In windowed EXE, std streams may be None; use a safe log config.
+            safe_log_config = None
+            try:
+                if not getattr(sys, "stdout", None) or not hasattr(sys.stdout, "isatty"):
+                    safe_log_config = _uvicorn_safe_log_config()
+            except Exception:
+                safe_log_config = _uvicorn_safe_log_config()
+
             config = uvicorn.Config(
                 app=app_instance,
                 host=host_value,
@@ -354,6 +398,7 @@ if __name__ == "__main__":
                 log_level="info",
                 reload=False,
                 factory=False,
+                log_config=safe_log_config,
             )
             server = uvicorn.Server(config)
             stop_event = threading.Event()

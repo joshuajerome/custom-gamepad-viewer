@@ -23,3 +23,7 @@ Note on NiceGUI packaging:
 Onefile vs onedir:
 - Onefile produces a single `CustomGamepadViewer.exe` that extracts to a temp folder at runtime (no `_internal` next to the EXE).
 - Onedir keeps dependencies in a sibling `_internal` folder. CI previously used onedir; it now targets onefile for Windows.
+
+Console vs windowed:
+- Builds now use `--windowed` on Windows to hide the console window so users only see the app window.
+- For local builds, pass `-Console` to `scripts\build-exe.ps1` if you want a console for debugging.

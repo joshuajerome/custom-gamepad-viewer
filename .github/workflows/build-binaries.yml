@@ -70,8 +70,8 @@ jobs:
           # Pin a recent PyInstaller; avoids older stubs that can trip heuristics
           python -m pip install "pyinstaller>=6.9,<7"
 
-          # Build as onefile (single EXE); keep NO UPX to reduce AV flags
-          pyinstaller --noconfirm --clean --noupx --onefile `
+          # Build as onefile (single EXE); hide console window; keep NO UPX to reduce AV flags
+          pyinstaller --noconfirm --clean --noupx --onefile --windowed `
             --name "CustomGamepadViewer" `
             --icon "packaging\windows\CustomGamepadViewer.ico" `
             --add-data "ui;ui" `

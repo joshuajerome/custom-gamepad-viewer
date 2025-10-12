@@ -5,6 +5,7 @@ param(
   [switch]$Clean,
   [switch]$OneFile,    # optional: force onefile
   [switch]$Onedir,     # optional: force onedir
+  [switch]$Console,    # optional: keep console window (default is windowed)
   [string]$Name = "CustomGamepadViewer"
 )
 
@@ -77,6 +78,9 @@ if ($useOneFile) { $argsList += "--onefile" } else { $argsList += "--onedir" }
 $argsList += @(
   "--name", $Name
 )
+
+# Hide console window by default (GUI subsystem). Use -Console to keep it.
+if (-not $Console) { $argsList += "--windowed" }
 
 # Icon (optional)
 $ico = "packaging\windows\CustomGamepadViewer.ico"
