@@ -88,6 +88,16 @@ if (Test-Path -LiteralPath $ico) {
   $argsList += @("--icon", $ico)
 }
 
+# Version info and manifest (improves metadata and may reduce AV heuristics)
+$versionFile = "packaging\windows\version-info.txt"
+if (Test-Path -LiteralPath $versionFile) {
+  $argsList += @("--version-file", $versionFile)
+}
+$manifestFile = "packaging\windows\app.manifest"
+if (Test-Path -LiteralPath $manifestFile) {
+  $argsList += @("--manifest", $manifestFile)
+}
+
 # Static/data folders
 $argsList += @(
   "--add-data", "ui;ui",

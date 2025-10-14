@@ -65,13 +65,19 @@ jobs:
           . .\scripts\setup.ps1 -clean
           . .\scripts\setup.ps1 -build
 
-          # Build single EXE, windowed (no console). Script pins PyInstaller and adds data files.
-          . .\scripts\build-exe.ps1 -Clean -OneFile
+          # Build onedir (less likely to trigger AV heuristics than single-file stubs)
+          . .\scripts\build-exe.ps1 -Clean -Onedir
 
-          # Upload the single EXE directly
-          $exePath = "dist\CustomGamepadViewer.exe"
-          if (-not (Test-Path $exePath)) { throw "EXE not found: $exePath" }
-          "ARTIFACT=$exePath" >> $env:GITHUB_ENV
+          $dirPath = "dist\CustomGamepadViewer"
+          if (-not (Test-Path $dirPath)) { throw "Onedir build not found: $dirPath" }
+
+          # Zip the folder for distribution
+          $zipPath = "dist\CustomGamepadViewer-Windows.zip"
+          if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          [System.IO.Compression.ZipFile]::CreateFromDirectory($dirPath, $zipPath)
+          if (-not (Test-Path $zipPath)) { throw "ZIP not created: $zipPath" }
+          "ARTIFACT=$zipPath" >> $env:GITHUB_ENV
 
       - name: Upload artifact (Windows)
         if: runner.os == 'Windows'
