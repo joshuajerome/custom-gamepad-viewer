@@ -5,6 +5,7 @@ from __future__ import annotations
 from contextlib import suppress
 from pathlib import Path
 from typing import Callable
+import os
 
 from loguru import logger
 from nicegui import app as nice_app
@@ -164,11 +165,13 @@ def run_launcher_ui(
         if auto_open:
             ui.timer(0.75, open_browser, once=True)
 
+    launcher_port = _sanitize_port(os.getenv("LAUNCHER_PORT", ""), 0)
+
     ui.run(
         native=True,
         reload=False,
-        host="127.0.0.1",
-        port=8083,
+        host=os.getenv("APP_HOST", "127.0.0.1"),
+        port=launcher_port,
         title="Custom Gamepad Viewer",
         window_size=(700, 500),
         fullscreen=False,
