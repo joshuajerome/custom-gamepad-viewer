@@ -65,17 +65,20 @@ jobs:
           . .\scripts\setup.ps1 -clean
           . .\scripts\setup.ps1 -build
 
-          # Build onedir (less likely to trigger AV heuristics than single-file stubs)
-          . .\scripts\build-exe.ps1 -Clean -Onedir
+          # Build onefile EXE (windowed). Then zip the EXE to reduce download blocking.
+          . .\scripts\build-exe.ps1 -Clean -OneFile
 
-          $dirPath = "dist\CustomGamepadViewer"
-          if (-not (Test-Path $dirPath)) { throw "Onedir build not found: $dirPath" }
+          $exePath = "dist\CustomGamepadViewer.exe"
+          if (-not (Test-Path $exePath)) { throw "EXE not found: $exePath" }
 
-          # Zip the folder for distribution
           $zipPath = "dist\CustomGamepadViewer-Windows.zip"
           if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
           Add-Type -AssemblyName System.IO.Compression.FileSystem
-          [System.IO.Compression.ZipFile]::CreateFromDirectory($dirPath, $zipPath)
+          $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) (New-Guid)
+          New-Item -ItemType Directory -Path $tmpDir | Out-Null
+          Copy-Item -LiteralPath $exePath -Destination (Join-Path $tmpDir "CustomGamepadViewer.exe")
+          [System.IO.Compression.ZipFile]::CreateFromDirectory($tmpDir, $zipPath)
+          Remove-Item -LiteralPath $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
           if (-not (Test-Path $zipPath)) { throw "ZIP not created: $zipPath" }
           "ARTIFACT=$zipPath" >> $env:GITHUB_ENV
 
