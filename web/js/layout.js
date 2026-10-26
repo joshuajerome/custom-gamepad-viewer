@@ -14,9 +14,9 @@ export function leafParts(layout) {
 }
 
 /** CSS custom properties pointing each asset variable at the theme's image. */
-export function themeVars(layout, themeBaseUrl) {
+export function themeVars(layout, themeBaseUrl, ext = 'png') {
   const base = themeBaseUrl.replace(/\/+$/, '');
   return Object.fromEntries(
-    Object.entries(layout.assets).map(([name, file]) => [`--${name}`, `url("${base}/${file}")`]),
+    Object.entries(layout.assets).map(([name, file]) => [`--${name}`, `url("${base}/${file}.${ext}")`]),
   );
 }

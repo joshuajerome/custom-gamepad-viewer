@@ -4,13 +4,23 @@ Form state <-> settings object <-> overlay URL. The preview iframe loads the
 real overlay.html with the same query, so it matches the browser source exactly.
 State is remembered per browser (localStorage) and can be seeded from this
 page's own query string, e.g. index.html?theme=black&p=2.
+
+Colour overrides live outside the <form> (in `colors`) because the available
+regions depend on the selected theme's theme.json.
 */
 
+import { normalizeHex } from './colors.js';
 import { DEFAULT_LAYOUT } from './layout.js';
 import { DEFAULTS, parseSettings, toQuery } from './settings.js';
+import { loadThemeDef, loadThemeIndex } from './themes.js';
 
 const STORAGE_KEY = 'cgv.builder';
 const layout = DEFAULT_LAYOUT;
+const themesUrl = new URL('themes/', document.baseURI).href;
+
+let themes = [];
+let themeDef = null; // theme.json of the selected theme, when it has colour regions
+let colors = {}; // region id -> "#rrggbb" overrides
 
 const form = document.getElementById('form');
 const els = {
@@ -27,6 +37,9 @@ const els = {
   preview: document.getElementById('preview'),
   detect: document.getElementById('detect'),
   reset: document.getElementById('reset'),
+  colors: document.getElementById('colors'),
+  presets: document.getElementById('presets'),
+  regions: document.getElementById('regions'),
 };
 
 function loadStored() {
@@ -43,16 +56,6 @@ function store(query) {
   } catch {
     // storage blocked (private mode, OBS dock); builder still works
   }
-}
-
-async function loadThemes() {
-  try {
-    const res = await fetch('themes/index.json', { cache: 'no-store' });
-    if (res.ok) return (await res.json()).themes;
-  } catch {
-    // fall through to the built-in default
-  }
-  return [{ id: DEFAULTS.theme, name: DEFAULTS.theme }];
 }
 
 function radio(name, value) {
@@ -73,6 +76,90 @@ function writeForm(s) {
   els.deadzone.value = s.deadzone;
   els.stickOffset.value = s.stickOffset;
   els.tilt.checked = s.tilt;
+  colors = { ...s.colors };
+}
+
+/** Overrides that apply to the selected theme (drops regions it doesn't have). */
+function activeColors() {
+  if (!themeDef) return {};
+  return Object.fromEntries(Object.entries(colors).filter(([id]) => themeDef.regions[id]));
+}
+
+function sameColors(a, b) {
+  const ka = Object.keys(a);
+  return ka.length === Object.keys(b).length && ka.every((k) => normalizeHex(a[k]) === normalizeHex(b[k]));
+}
+
+function renderColors() {
+  els.colors.hidden = !themeDef;
+  els.presets.replaceChildren();
+  els.regions.replaceChildren();
+  if (!themeDef) return;
+
+  const current = activeColors();
+  for (const preset of themeDef.presets || []) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'preset';
+    btn.setAttribute('aria-pressed', String(sameColors(current, preset.colors)));
+    const swatch = document.createElement('span');
+    swatch.className = 'swatch';
+    const pick = (id) => preset.colors[id] || themeDef.regions[id]?.anchor || '#000000';
+    swatch.style.background =
+      `linear-gradient(135deg, ${pick('shell')} 0 50%, ${pick('accent')} 50% 75%, ${pick('highlight')} 75%)`;
+    btn.append(swatch, preset.name);
+    btn.addEventListener('click', () => {
+      colors = { ...preset.colors };
+      renderColors();
+      update();
+    });
+    els.presets.append(btn);
+  }
+
+  for (const [id, region] of Object.entries(themeDef.regions)) {
+    const row = document.createElement('div');
+    row.className = 'region';
+    row.classList.toggle('custom', Boolean(current[id]));
+
+    const input = document.createElement('input');
+    input.type = 'color';
+    input.id = `color-${id}`;
+    input.value = current[id] || normalizeHex(region.anchor);
+
+    const label = document.createElement('label');
+    label.htmlFor = input.id;
+    label.textContent = region.label || id;
+    if (region.hint) label.title = region.hint;
+
+    const reset = document.createElement('button');
+    reset.type = 'button';
+    reset.className = 'region-reset';
+    reset.textContent = 'Reset';
+    reset.setAttribute('aria-label', `Reset ${region.label || id} to the original colour`);
+    reset.addEventListener('click', () => {
+      delete colors[id];
+      renderColors();
+      update();
+    });
+
+    input.addEventListener('input', (e) => {
+      e.stopPropagation(); // handled here, not by the form listener
+      colors[id] = input.value;
+      row.classList.add('custom');
+      for (const b of els.presets.children) b.setAttribute('aria-pressed', 'false');
+      update();
+    });
+
+    row.append(input, label, reset);
+    els.regions.append(row);
+  }
+}
+
+async function selectTheme(id) {
+  const entry = themes.find((t) => t.id === id);
+  themeDef = entry?.format === 'svg' ? await loadThemeDef(themesUrl, id) : null;
+  if (themeDef && !themeDef.regions) themeDef = null;
+  renderColors();
 }
 
 function readForm() {
@@ -86,6 +173,7 @@ function readForm() {
     tilt: els.tilt.checked,
     triggerMode: data.get('triggerMode'),
     debug: false,
+    colors: activeColors(),
   };
 }
 
@@ -164,20 +252,31 @@ function watchForInput() {
 }
 
 async function init() {
-  const themes = await loadThemes();
+  themes = await loadThemeIndex(themesUrl);
+  if (themes.length === 0) themes = [{ id: DEFAULTS.theme, name: DEFAULTS.theme, format: 'png' }];
   for (const t of themes) els.theme.add(new Option(t.name, t.id));
 
-  const initial = parseSettings(location.search || loadStored());
-  if (!themes.some((t) => t.id === initial.theme)) initial.theme = themes[0].id;
+  const seed = location.search || loadStored();
+  const initial = parseSettings(seed);
+  // Without an explicit theme, start on the featured (first) theme; overlay URLs
+  // keep their own default.
+  const named = new URLSearchParams(seed).has('theme');
+  if (!named || !themes.some((t) => t.id === initial.theme)) initial.theme = themes[0].id;
   writeForm(initial);
+  await selectTheme(initial.theme);
   update({ immediatePreview: true });
 
   form.addEventListener('input', () => update());
   form.addEventListener('change', () => update());
+  els.theme.addEventListener('change', async () => {
+    await selectTheme(els.theme.value);
+    update({ immediatePreview: true });
+  });
   els.copy.addEventListener('click', copyUrl);
   els.url.addEventListener('focus', () => els.url.select());
-  els.reset.addEventListener('click', () => {
+  els.reset.addEventListener('click', async () => {
     writeForm({ ...DEFAULTS, theme: themes[0].id });
+    await selectTheme(themes[0].id);
     update({ immediatePreview: true });
   });
   watchForInput();

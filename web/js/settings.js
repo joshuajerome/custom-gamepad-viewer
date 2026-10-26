@@ -11,6 +11,8 @@ described by the address pasted into it (no server, no storage).
   tilt     0 disables the stick tilt effect     (default 1)
   trigger  "fade" (opacity) or "meter" (fill)   (default "fade")
   debug    1 shows raw gamepad input            (default 0)
+  colors   region:hex pairs for SVG themes, e.g. "shell:1e1e1e,accent:ff0055"
+           (regions are defined by the theme's theme.json; default none)
 */
 
 export const DEFAULTS = Object.freeze({
@@ -22,9 +24,12 @@ export const DEFAULTS = Object.freeze({
   tilt: true,
   triggerMode: 'fade',
   debug: false,
+  colors: Object.freeze({}),
 });
 
 const THEME_ID = /^[a-z0-9][a-z0-9_-]{0,63}$/i;
+const REGION_ID = /^[a-z][a-z0-9_-]{0,31}$/;
+const HEX6 = /^[0-9a-f]{6}$/i;
 
 function num(raw, fallback, min, max) {
   if (raw === null || raw.trim() === '') return fallback;
@@ -36,6 +41,25 @@ function num(raw, fallback, min, max) {
 function flag(raw, fallback) {
   if (raw === null) return fallback;
   return !['0', 'false', 'no', 'off'].includes(raw.toLowerCase());
+}
+
+/** "shell:1e1e1e,accent:FF0055" -> { shell: "#1e1e1e", accent: "#ff0055" }; bad pairs are dropped. */
+export function parseColors(raw) {
+  const colors = {};
+  for (const pair of String(raw || '').split(',')) {
+    const [region, hex] = pair.split(':').map((v) => v.trim().replace(/^#/, ''));
+    if (REGION_ID.test(region || '') && HEX6.test(hex || '')) colors[region] = `#${hex.toLowerCase()}`;
+  }
+  return colors;
+}
+
+/** Inverse of parseColors. */
+export function formatColors(colors) {
+  return Object.entries(colors || {})
+    .map(([region, hex]) => [region, String(hex).replace(/^#/, '').toLowerCase()])
+    .filter(([region, hex]) => REGION_ID.test(region) && HEX6.test(hex))
+    .map(([region, hex]) => `${region}:${hex}`)
+    .join(',');
 }
 
 /** Parse a query string (or URLSearchParams) into a complete settings object. */
@@ -54,6 +78,7 @@ export function parseSettings(search) {
     tilt: flag(q.get('tilt'), DEFAULTS.tilt),
     triggerMode: q.get('trigger') === 'meter' ? 'meter' : 'fade',
     debug: flag(q.get('debug'), DEFAULTS.debug),
+    colors: parseColors(q.get('colors')),
   };
 }
 
@@ -77,5 +102,8 @@ export function toQuery(settings) {
     if (value === undefined || (value === DEFAULTS[key] && key !== 'theme')) continue;
     q.set(param, serialize(value));
   }
-  return q.toString();
+  // Appended raw: region ids and hex digits need no escaping, and ":" / ","
+  // stay readable in the URL people paste into their streaming software.
+  const colors = formatColors(settings.colors);
+  return colors ? `${q}&colors=${colors}` : q.toString();
 }

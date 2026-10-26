@@ -1,6 +1,7 @@
 {
   "themes": [
-    { "id": "white", "name": "White / Red" },
-    { "id": "black", "name": "Black" }
+    { "id": "dualsense", "name": "DualSense (custom colours)", "format": "svg" },
+    { "id": "white", "name": "White / Red", "format": "png" },
+    { "id": "black", "name": "Black", "format": "png" }
   ]
 }

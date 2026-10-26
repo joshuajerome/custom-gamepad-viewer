@@ -1,0 +1,85 @@
+{
+  "name": "DualSense (custom colours)",
+  "format": "svg",
+  "regions": {
+    "shell": {
+      "label": "Shell",
+      "anchor": "#ffffff",
+      "colors": { "Base.svg": ["#ffffff"] }
+    },
+    "faceplate": {
+      "label": "Faceplate",
+      "anchor": "#101010",
+      "colors": { "Base.svg": ["#101010", "#181818", "#171717", "#2b2b2b"] }
+    },
+    "accent": {
+      "label": "Accents",
+      "hint": "Touchpad, triggers, bumpers, D-pad, Create/Options",
+      "anchor": "#c1272d",
+      "colors": {
+        "Base.svg": ["#c1272d", "#9e1f20", "#c6383d"],
+        "Dpad.svg": ["#c1272d", "#9e1f20", "#c6383d"],
+        "Disconnected.svg": ["#c1272d"]
+      }
+    },
+    "lightbar": {
+      "label": "Light bar",
+      "anchor": "#ff0000",
+      "colors": { "Base.svg": ["#ff0000", "#ff0202", "#ff7474", "#ff8181", "#ffd7d7", "#ffd8d8"] }
+    },
+    "sticks": {
+      "label": "Sticks",
+      "anchor": "#e12229",
+      "colors": { "Stick.svg": ["#e12229", "#e5353b", "#b9191a"] }
+    },
+    "buttons": {
+      "label": "Face buttons",
+      "anchor": "#171717",
+      "colors": { "Face.svg": ["#171717", "#000000"] }
+    },
+    "symbols": {
+      "label": "Button symbols",
+      "hint": "Replaces the four PlayStation colours with one",
+      "mode": "flat",
+      "anchor": "#f16667",
+      "colors": { "Face.svg": ["#66c194", "#cb79b1", "#f16667", "#7fb1df"] }
+    },
+    "highlight": {
+      "label": "Pressed highlight",
+      "anchor": "#3ed8d2",
+      "colors": {
+        "Bumper.svg": ["#3ed8d2", "#61e0df"],
+        "Dpad.svg": ["#83d7d1", "#79c7c2", "#93dfde"],
+        "Face.svg": ["#83d7d1", "#79c7c2"],
+        "Meta.svg": ["#83d7d1"],
+        "Start.svg": ["#83d7d1", "#79c7c2"],
+        "Stick.svg": ["#39c8c3", "#3ed8d2", "#61e0df"],
+        "Touchpad.svg": ["#3ed8d2", "#61e0df"],
+        "Trigger.svg": ["#3ed8d2", "#61e0df"]
+      }
+    }
+  },
+  "presets": [
+    { "name": "Original", "colors": {} },
+    {
+      "name": "Midnight",
+      "colors": { "shell": "#1f2023", "faceplate": "#0c0c0d", "accent": "#2e3036", "sticks": "#2a2b30", "lightbar": "#3b82f6", "highlight": "#60a5fa" }
+    },
+    {
+      "name": "Crimson",
+      "colors": { "shell": "#7a0f16", "faceplate": "#120607", "accent": "#1a1a1a", "sticks": "#1f1f1f", "lightbar": "#ff2d2d", "highlight": "#ffb020" }
+    },
+    {
+      "name": "Rose",
+      "colors": { "shell": "#f6c7d6", "faceplate": "#fbe8ee", "accent": "#e58aab", "lightbar": "#ff5fa2", "sticks": "#e58aab", "buttons": "#fbe8ee", "symbols": "#9c3d62", "highlight": "#ffffff" }
+    },
+    {
+      "name": "Ice",
+      "colors": { "shell": "#a8c8ea", "faceplate": "#eef4fb", "accent": "#5b8ccc", "lightbar": "#38bdf8", "sticks": "#4a78b5", "buttons": "#eef4fb", "symbols": "#2f5c96", "highlight": "#ffd166" }
+    },
+    {
+      "name": "Galaxy",
+      "colors": { "shell": "#3a2766", "faceplate": "#150f26", "accent": "#7a55c8", "sticks": "#6a46b8", "lightbar": "#c084fc", "highlight": "#f0abfc" }
+    }
+  ]
+}

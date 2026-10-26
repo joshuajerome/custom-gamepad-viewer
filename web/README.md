@@ -27,8 +27,39 @@ overlay.html?theme=white&p=1
 | `tilt` | `0` disables stick tilt | `1` |
 | `trigger` | `fade` (opacity) or `meter` (fills from the bottom) | `fade` |
 | `debug` | `1` shows raw controller input | `0` |
+| `colors` | `region:hex` pairs for colourable themes, e.g. `shell:1e1e1e,accent:ff0055` | none |
 
 Press a button once after the source loads; browsers hide gamepads until the first input.
+
+## Themes and custom colours
+
+`themes/index.json` lists the themes and their `format`:
+
+- **`png`** (`white`, `black`): one PNG per layout asset (`Base.png`, `Face.png`, …). Drop in a
+  folder with the same file names and add it to the index to create a new skin.
+- **`svg`** (`dualsense`): one SVG per asset plus a `theme.json` that makes the theme colourable.
+  The overlay fetches the SVGs, applies the `colors` overrides and inlines the result as data
+  URIs. That keeps the art sharp at any scale, and nothing is generated on a server.
+
+`theme.json` defines **regions** (shell, faceplate, accents, light bar, sticks, face buttons,
+symbols, pressed highlight). For each region it lists the exact fill colours that region owns in
+each SVG, plus an `anchor` (its main colour). A picked colour replaces the anchor. Every other
+listed colour becomes a matching shade: it keeps its hue offset, saturation ratio and lightness
+relative to the anchor, so shadows and highlights survive. A region with `"mode": "flat"` maps
+all its colours to the picked one; the four PlayStation symbol colours work this way. `presets`
+are named sets of overrides shown in the builder.
+
+Authoring rules for colourable SVGs (tests in `tests/web/themes.test.js` enforce the first two):
+
+- Every colour listed for a region must appear in that file.
+- Presets may only use regions that exist.
+- A colour that serves two purposes in one file needs to be split into two near-identical values
+  first. In `Face.svg`, the pressed-state symbol ink is `#161616` and the idle button disc is
+  `#171717`.
+
+The `dualsense` SVGs are the original vector sources from `misc/svgs/` (commit `bf9d08f`), with
+the D-pad and face-button artwork removed from `Base.svg`; the `Dpad` and `Face` sprites draw
+those.
 
 ## Hosting
 
@@ -60,9 +91,12 @@ npm run test:web      # node --test, no installs needed
 | `js/renderer.js` | Builds the DOM from a layout and applies frames (only changed values) |
 | `js/overlay.js` | Entry point and `requestAnimationFrame` loop |
 | `js/builder.js`, `css/builder.css` | Builder page: form ↔ settings ↔ URL, live preview iframe, slot detection |
+| `js/colors.js` | Pure region recolouring: hex/HSL, `shade`, `buildReplacements`, `recolorSvg` |
+| `js/themes.js` | Theme index/definition loading; resolves a theme (+ colours) to CSS variables |
 | `themes/index.json` | Theme list shown in the builder (a test keeps it in sync with the folders) |
 | `css/layouts/ds5.css` | Geometry from `controller_css/layout.css` plus structural rules GPV used to supply |
-| `themes/` | Skin PNGs (copied from the repo's `themes/`) |
+| `themes/white`, `themes/black` | PNG skins (copied from the repo's `themes/`) |
+| `themes/dualsense` | Colourable SVG skin and its `theme.json` |
 
 To add a controller, write `js/layouts/<name>.js` and `css/layouts/<name>.css`, then register
 the layout in `js/layout.js`.
