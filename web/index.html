@@ -1,0 +1,42 @@
+<!doctype html>
+<!-- Temporary landing page (Phase 1). Replaced by the URL builder in Phase 3. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="assets/favicon.png" />
+  <title>Custom Gamepad Viewer</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; font: 15px/1.5 system-ui, Segoe UI, Roboto, sans-serif; background: #111827; color: #f3f4f6; }
+    main { max-width: 720px; margin: 0 auto; padding: 32px 16px; }
+    a { color: #60a5fa; }
+    code { background: #1f2937; padding: 2px 6px; border-radius: 4px; word-break: break-all; }
+    li { margin: 6px 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Custom Gamepad Viewer</h1>
+    <p>Add <code>overlay.html</code> as a Browser Source in Streamlabs or OBS. Press a button on
+      your controller once so the browser can see it.</p>
+    <ul>
+      <li><a href="overlay.html?theme=white">White theme, player 1</a></li>
+      <li><a href="overlay.html?theme=black">Black theme, player 1</a></li>
+      <li><a href="overlay.html?theme=white&amp;debug=1">White theme with input debug</a></li>
+      <li><a href="overlay.html?theme=white&amp;trigger=meter">White theme, trigger meter mode</a></li>
+    </ul>
+    <h2>URL options</h2>
+    <ul>
+      <li><code>theme</code>: <code>white</code> or <code>black</code></li>
+      <li><code>p</code>: player slot 1 to 4</li>
+      <li><code>scale</code>: <code>fit</code> (default) or a number such as <code>0.5</code></li>
+      <li><code>dz</code>: stick deadzone, default <code>0.25</code></li>
+      <li><code>offset</code>: stick travel in pixels, default <code>22</code></li>
+      <li><code>tilt=0</code>: turn off stick tilt</li>
+      <li><code>trigger=meter</code>: fill triggers from the bottom instead of fading in</li>
+      <li><code>debug=1</code>: show raw controller input</li>
+    </ul>
+  </main>
+</body>
+</html>
