@@ -12,6 +12,7 @@ regions depend on the selected theme's theme.json.
 import { normalizeHex } from './colors.js';
 import { DEFAULT_LAYOUT } from './layout.js';
 import { DEFAULTS, parseSettings, toQuery } from './settings.js';
+import { buildStandalone } from './standalone.js';
 import { loadThemeDef, loadThemeIndex } from './themes.js';
 
 const STORAGE_KEY = 'cgv.builder';
@@ -37,6 +38,8 @@ const els = {
   preview: document.getElementById('preview'),
   detect: document.getElementById('detect'),
   reset: document.getElementById('reset'),
+  download: document.getElementById('download'),
+  downloadStatus: document.getElementById('download-status'),
   colors: document.getElementById('colors'),
   presets: document.getElementById('presets'),
   regions: document.getElementById('regions'),
@@ -228,6 +231,27 @@ async function copyUrl() {
   setTimeout(() => { els.copy.textContent = 'Copy'; }, 1500);
 }
 
+async function downloadStandalone() {
+  const settings = readForm();
+  els.download.disabled = true;
+  els.downloadStatus.textContent = 'Building…';
+  try {
+    const html = await buildStandalone({
+      layout, settings, query: toQuery(settings), siteUrl: new URL('./', location.href).href,
+    });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+    link.download = `gamepad-overlay-${settings.theme}-p${settings.player}.html`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+    els.downloadStatus.textContent = `Saved ${link.download} (${Math.round(html.length / 1024)} KB).`;
+  } catch (err) {
+    els.downloadStatus.textContent = `Couldn't build the file: ${err.message}`;
+  } finally {
+    els.download.disabled = false;
+  }
+}
+
 // Slot detection: the first gamepad with input wins.
 function watchForInput() {
   let lastIndex = -1;
@@ -273,6 +297,7 @@ async function init() {
     update({ immediatePreview: true });
   });
   els.copy.addEventListener('click', copyUrl);
+  els.download.addEventListener('click', downloadStandalone);
   els.url.addEventListener('focus', () => els.url.select());
   els.reset.addEventListener('click', async () => {
     writeForm({ ...DEFAULTS, theme: themes[0].id });
