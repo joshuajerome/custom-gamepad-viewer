@@ -14,6 +14,8 @@
 - `uv run python app.py` starts the auto-reloading dev server on `http://127.0.0.1:8000`.
 - `uv run pytest` executes the backend test suite; add `-k pattern` to target specific cases.
 - `uv run ruff check` and `uv run mypy .` run linting and type checks expected before submitting a PR.
+- `web/` is the static (GitHub Pages) overlay: `npm run serve:web` serves it on `127.0.0.1:8765`
+  and `npm run test:web` runs its `node --test` suites in `tests/web/` (no npm installs needed).
 
 ## Coding Style & Naming Conventions
 - Write Python with 4-space indentation, keep lines ≤100 chars (configured via Ruff), and favour type hints on function boundaries.

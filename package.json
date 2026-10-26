@@ -1,0 +1,10 @@
+{
+  "name": "custom-gamepad-viewer-web",
+  "private": true,
+  "type": "module",
+  "description": "Static web overlay (web/). No runtime or dev dependencies.",
+  "scripts": {
+    "test:web": "node --test \"tests/web/**/*.test.js\"",
+    "serve:web": "node scripts/serve-web.mjs"
+  }
+}
