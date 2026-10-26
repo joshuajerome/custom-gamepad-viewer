@@ -31,6 +31,22 @@ overlay.html?theme=white&p=1
 
 Press a button once after the source loads; browsers hide gamepads until the first input.
 
+### Offline file
+
+Streamlabs and OBS **Local file** sources load over `file://`. There, browsers block ES modules
+and `fetch()`, and the source can't take a query string. **Download overlay file** in the builder
+gets around this by producing one self-contained HTML file (`js/standalone.js`):
+
+- `js/bundle.js` (a ~100-line bundler for exactly the import/export forms used here) inlines the
+  overlay's module graph into one classic script.
+- The layout CSS is inlined.
+- Theme images are inlined as `data:` URIs (SVG themes already recoloured).
+- The settings query is baked into `window.CGV_STANDALONE`, which `js/overlay.js` reads instead of
+  the URL.
+
+Because it's assembled in the browser from the deployed files, there's no build step to keep in
+sync.
+
 ## Themes and custom colours
 
 `themes/index.json` lists the themes and their `format`:
@@ -93,6 +109,7 @@ npm run test:web      # node --test, no installs needed
 | `js/builder.js`, `css/builder.css` | Builder page: form ↔ settings ↔ URL, live preview iframe, slot detection |
 | `js/colors.js` | Pure region recolouring: hex/HSL, `shade`, `buildReplacements`, `recolorSvg` |
 | `js/themes.js` | Theme index/definition loading; resolves a theme (+ colours) to CSS variables |
+| `js/bundle.js`, `js/standalone.js` | Offline file: module bundler and self-contained HTML assembly |
 | `themes/index.json` | Theme list shown in the builder (a test keeps it in sync with the folders) |
 | `css/layouts/ds5.css` | Geometry from `controller_css/layout.css` plus structural rules GPV used to supply |
 | `themes/white`, `themes/black` | PNG skins (copied from the repo's `themes/`) |

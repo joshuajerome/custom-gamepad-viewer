@@ -3,6 +3,9 @@
 Reads the player's gamepad every animation frame via the Gamepad API and
 renders it. Browsers only expose a gamepad after its first input, so the
 controller shows as disconnected until a button is pressed.
+
+Standalone (offline) builds set window.CGV_STANDALONE = { query, vars } with the
+settings and theme baked in, and inline the layout CSS (see standalone.js).
 */
 
 import { DEFAULT_LAYOUT } from './layout.js';
@@ -11,22 +14,29 @@ import { computeFrame, snapshot } from './frame.js';
 import { ControllerRenderer } from './renderer.js';
 import { resolveThemeVars } from './themes.js';
 
-const settings = parseSettings(location.search);
+const standalone = globalThis.CGV_STANDALONE;
+const settings = parseSettings(standalone ? standalone.query : location.search);
 const layout = DEFAULT_LAYOUT;
 
-const css = document.createElement('link');
-css.rel = 'stylesheet';
-css.href = layout.cssHref;
-document.head.appendChild(css);
+if (!standalone) {
+  const css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = layout.cssHref;
+  document.head.appendChild(css);
+}
 
 const stage = document.getElementById('stage');
 stage.style.width = `${layout.width}px`;
 stage.style.height = `${layout.height}px`;
 
 const renderer = new ControllerRenderer(layout, stage);
-const themesUrl = new URL('themes/', document.baseURI).href;
-resolveThemeVars(layout, themesUrl, settings.theme, settings.colors)
-  .then((vars) => renderer.setVars(vars));
+if (standalone) {
+  renderer.setVars(standalone.vars);
+} else {
+  const themesUrl = new URL('themes/', document.baseURI).href;
+  resolveThemeVars(layout, themesUrl, settings.theme, settings.colors)
+    .then((vars) => renderer.setVars(vars));
+}
 
 function applyScale() {
   const s = settings.scale === 'fit'

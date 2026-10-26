@@ -145,6 +145,8 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .region-reset:hover { color: var(--text); }
 
 .hint { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+.hint.first { margin: 0 0 12px; }
+.hint.inline { margin: 0; align-self: center; }
 .hint a { color: var(--accent); }
 
 .btn {
