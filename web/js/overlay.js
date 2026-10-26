@@ -9,6 +9,7 @@ import { DEFAULT_LAYOUT } from './layout.js';
 import { parseSettings } from './settings.js';
 import { computeFrame, snapshot } from './frame.js';
 import { ControllerRenderer } from './renderer.js';
+import { resolveThemeVars } from './themes.js';
 
 const settings = parseSettings(location.search);
 const layout = DEFAULT_LAYOUT;
@@ -23,7 +24,9 @@ stage.style.width = `${layout.width}px`;
 stage.style.height = `${layout.height}px`;
 
 const renderer = new ControllerRenderer(layout, stage);
-renderer.setTheme(`themes/${settings.theme}`);
+const themesUrl = new URL('themes/', document.baseURI).href;
+resolveThemeVars(layout, themesUrl, settings.theme, settings.colors)
+  .then((vars) => renderer.setVars(vars));
 
 function applyScale() {
   const s = settings.scale === 'fit'

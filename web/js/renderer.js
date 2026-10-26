@@ -5,7 +5,7 @@ produced by computeFrame(). Only touches the DOM when a value changes, so the
 per-frame cost stays tiny inside a browser source.
 */
 
-import { leafParts, themeVars } from './layout.js';
+import { leafParts } from './layout.js';
 
 const STYLE_PROPS = ['opacity', 'clipPath', 'marginLeft', 'marginTop', 'transform'];
 
@@ -40,13 +40,13 @@ export class ControllerRenderer {
     return el;
   }
 
-  setTheme(themeBaseUrl) {
-    // url() inside a custom property resolves against the stylesheet that uses it
-    // (css/layouts/), so hand the layout CSS absolute URLs.
-    const absolute = new URL(`${themeBaseUrl.replace(/\/+$/, '')}/`, document.baseURI).href;
-    for (const [name, value] of Object.entries(themeVars(this.layout, absolute))) {
-      this.root.style.setProperty(name, value);
-    }
+  /**
+   * Apply theme CSS variables (see themes.resolveThemeVars). url() values must be
+   * absolute or data: URIs: inside a custom property they resolve against the
+   * stylesheet that uses them (css/layouts/), not this page.
+   */
+  setVars(vars) {
+    for (const [name, value] of Object.entries(vars)) this.root.style.setProperty(name, value);
   }
 
   render(frame) {

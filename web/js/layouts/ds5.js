@@ -16,18 +16,18 @@ export const ds5 = {
   width: 903,
   height: 713,
 
-  // CSS variable -> theme image file
+  // CSS variable -> theme image name (extension comes from the theme's format)
   assets: {
-    base: 'Base.png',
-    disconnected: 'Disconnected.png',
-    trigger: 'Trigger.png',
-    bumper: 'Bumper.png',
-    touchpad: 'Touchpad.png',
-    meta: 'Meta.png',
-    start: 'Start.png',
-    face: 'Face.png',
-    stick: 'Stick.png',
-    dpad: 'Dpad.png',
+    base: 'Base',
+    disconnected: 'Disconnected',
+    trigger: 'Trigger',
+    bumper: 'Bumper',
+    touchpad: 'Touchpad',
+    meta: 'Meta',
+    start: 'Start',
+    face: 'Face',
+    stick: 'Stick',
+    dpad: 'Dpad',
   },
 
   // kind: 'button' (toggles .pressed), 'trigger' (analog fill), 'stick' (moves + .pressed)
