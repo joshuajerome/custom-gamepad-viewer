@@ -6,6 +6,13 @@ on GitHub Pages and used directly as a Streamlabs / OBS Browser Source.
 
 ## Use
 
+Open `index.html` (the builder). Pick a theme, player slot and display options, check the live
+preview, then **Copy** the browser-source URL. The builder detects your controller's slot when you
+press a button, and remembers your choices in this browser. To edit an existing URL, open the
+builder with the same query, e.g. `index.html?theme=black&p=2`.
+
+The overlay URL looks like:
+
 ```
 overlay.html?theme=white&p=1
 ```
@@ -52,6 +59,8 @@ npm run test:web      # node --test, no installs needed
 | `js/frame.js` | Pure gamepad snapshot → per-part visual state (pressed, stick offset/tilt, trigger fill) |
 | `js/renderer.js` | Builds the DOM from a layout and applies frames (only changed values) |
 | `js/overlay.js` | Entry point and `requestAnimationFrame` loop |
+| `js/builder.js`, `css/builder.css` | Builder page: form ↔ settings ↔ URL, live preview iframe, slot detection |
+| `themes/index.json` | Theme list shown in the builder (a test keeps it in sync with the folders) |
 | `css/layouts/ds5.css` | Geometry from `controller_css/layout.css` plus structural rules GPV used to supply |
 | `themes/` | Skin PNGs (copied from the repo's `themes/`) |
 

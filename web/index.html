@@ -1,42 +1,105 @@
 <!doctype html>
-<!-- Temporary landing page (Phase 1). Replaced by the URL builder in Phase 3. -->
+<!-- URL builder: pick options, preview the overlay live, copy the browser-source URL. -->
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="assets/favicon.png" />
   <title>Custom Gamepad Viewer</title>
-  <style>
-    :root { color-scheme: dark; }
-    body { margin: 0; font: 15px/1.5 system-ui, Segoe UI, Roboto, sans-serif; background: #111827; color: #f3f4f6; }
-    main { max-width: 720px; margin: 0 auto; padding: 32px 16px; }
-    a { color: #60a5fa; }
-    code { background: #1f2937; padding: 2px 6px; border-radius: 4px; word-break: break-all; }
-    li { margin: 6px 0; }
-  </style>
+  <link rel="stylesheet" href="css/builder.css" />
 </head>
 <body>
-  <main>
+  <header class="topbar">
+    <img src="assets/favicon.png" alt="" width="32" height="32" />
     <h1>Custom Gamepad Viewer</h1>
-    <p>Add <code>overlay.html</code> as a Browser Source in Streamlabs or OBS. Press a button on
-      your controller once so the browser can see it.</p>
-    <ul>
-      <li><a href="overlay.html?theme=white">White theme, player 1</a></li>
-      <li><a href="overlay.html?theme=black">Black theme, player 1</a></li>
-      <li><a href="overlay.html?theme=white&amp;debug=1">White theme with input debug</a></li>
-      <li><a href="overlay.html?theme=white&amp;trigger=meter">White theme, trigger meter mode</a></li>
-    </ul>
-    <h2>URL options</h2>
-    <ul>
-      <li><code>theme</code>: <code>white</code> or <code>black</code></li>
-      <li><code>p</code>: player slot 1 to 4</li>
-      <li><code>scale</code>: <code>fit</code> (default) or a number such as <code>0.5</code></li>
-      <li><code>dz</code>: stick deadzone, default <code>0.25</code></li>
-      <li><code>offset</code>: stick travel in pixels, default <code>22</code></li>
-      <li><code>tilt=0</code>: turn off stick tilt</li>
-      <li><code>trigger=meter</code>: fill triggers from the bottom instead of fading in</li>
-      <li><code>debug=1</code>: show raw controller input</li>
-    </ul>
+  </header>
+
+  <main class="layout">
+    <form id="form" class="panel" autocomplete="off">
+      <section>
+        <h2>Controller</h2>
+        <label class="field">
+          <span>Theme</span>
+          <select id="theme" name="theme"></select>
+        </label>
+
+        <fieldset class="field">
+          <legend>Player slot</legend>
+          <div class="segmented" id="player">
+            <label><input type="radio" name="player" value="1" checked /><span>P1</span></label>
+            <label><input type="radio" name="player" value="2" /><span>P2</span></label>
+            <label><input type="radio" name="player" value="3" /><span>P3</span></label>
+            <label><input type="radio" name="player" value="4" /><span>P4</span></label>
+          </div>
+          <p class="hint" id="detect" role="status">Press a button on your controller to detect its slot.</p>
+        </fieldset>
+      </section>
+
+      <section>
+        <h2>Display</h2>
+        <fieldset class="field">
+          <legend>Trigger style</legend>
+          <div class="segmented">
+            <label><input type="radio" name="triggerMode" value="fade" checked /><span>Fade in</span></label>
+            <label><input type="radio" name="triggerMode" value="meter" /><span>Fill meter</span></label>
+          </div>
+        </fieldset>
+
+        <label class="field">
+          <span>Size</span>
+          <select id="scale" name="scale">
+            <option value="fit">Fit browser source</option>
+            <option value="1">100%</option>
+            <option value="0.75">75%</option>
+            <option value="0.5">50%</option>
+            <option value="0.35">35%</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Stick deadzone <output id="deadzone-out"></output></span>
+          <input type="range" id="deadzone" name="deadzone" min="0" max="0.9" step="0.05" />
+        </label>
+
+        <label class="field">
+          <span>Stick travel <output id="stickOffset-out"></output></span>
+          <input type="range" id="stickOffset" name="stickOffset" min="0" max="60" step="1" />
+        </label>
+
+        <label class="check">
+          <input type="checkbox" id="tilt" name="tilt" />
+          <span>Tilt sticks as they move</span>
+        </label>
+      </section>
+
+      <button type="button" class="btn ghost" id="reset">Reset to defaults</button>
+    </form>
+
+    <div class="output">
+      <section class="panel">
+        <h2>Browser source URL</h2>
+        <div class="url-row">
+          <input id="url" type="text" readonly aria-label="Browser source URL" />
+          <button type="button" class="btn primary" id="copy">Copy</button>
+        </div>
+        <p class="hint" id="size"></p>
+        <p class="hint">
+          In Streamlabs or OBS: <b>Add Source → Browser Source</b>, paste the URL, set the width and
+          height above. Press a controller button once after it loads.
+          <a id="open" href="overlay.html" target="_blank" rel="noopener">Open overlay</a> ·
+          <a id="open-debug" href="overlay.html?debug=1" target="_blank" rel="noopener">Open with input debug</a>
+        </p>
+      </section>
+
+      <section class="panel">
+        <h2>Preview</h2>
+        <div class="preview">
+          <iframe id="preview" title="Overlay preview" allow="gamepad"></iframe>
+        </div>
+      </section>
+    </div>
   </main>
+
+  <script type="module" src="js/builder.js"></script>
 </body>
 </html>
