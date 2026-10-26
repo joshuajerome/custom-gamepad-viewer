@@ -23,6 +23,18 @@ overlay.html?theme=white&p=1
 
 Press a button once after the source loads; browsers hide gamepads until the first input.
 
+## Hosting
+
+Live at **https://joshuajerome.github.io/custom-gamepad-viewer/**. For example:
+
+```
+https://joshuajerome.github.io/custom-gamepad-viewer/overlay.html?theme=white&p=1
+```
+
+`.github/workflows/web-pages.yml` runs `npm run test:web` on PRs that touch `web/`. When `web/`
+changes on `main` or a `rel/web-*` branch, it also publishes the `web/` folder as-is (no build
+step). The `github-pages` environment only accepts deploys from those branches.
+
 ## Develop
 
 ```bash

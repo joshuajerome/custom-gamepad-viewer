@@ -4,6 +4,8 @@ on:
   push:
     branches: [ main, usr/**, rel/** ]
     tags: [ 'v*.*.*' ]
+    # The static web overlay doesn't affect the desktop app (path filters don't apply to tags).
+    paths-ignore: [ 'web/**', 'tests/web/**', 'package.json', '.github/workflows/web-pages.yml' ]
   workflow_dispatch: {}
 
 concurrency:
