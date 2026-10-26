@@ -56,3 +56,26 @@ export function parseSettings(search) {
     debug: flag(q.get('debug'), DEFAULTS.debug),
   };
 }
+
+// settings key -> [query param, serializer]; inverse of parseSettings
+const PARAMS = {
+  theme: ['theme', String],
+  player: ['p', String],
+  scale: ['scale', String],
+  deadzone: ['dz', String],
+  stickOffset: ['offset', String],
+  tilt: ['tilt', (v) => (v ? '1' : '0')],
+  triggerMode: ['trigger', String],
+  debug: ['debug', (v) => (v ? '1' : '0')],
+};
+
+/** Serialize settings to a query string, omitting defaults (theme is always kept). */
+export function toQuery(settings) {
+  const q = new URLSearchParams();
+  for (const [key, [param, serialize]] of Object.entries(PARAMS)) {
+    const value = settings[key];
+    if (value === undefined || (value === DEFAULTS[key] && key !== 'theme')) continue;
+    q.set(param, serialize(value));
+  }
+  return q.toString();
+}

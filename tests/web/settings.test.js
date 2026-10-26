@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DEFAULTS, parseSettings } from '../../web/js/settings.js';
+import { DEFAULTS, parseSettings, toQuery } from '../../web/js/settings.js';
 
 test('empty query yields defaults', () => {
   assert.deepEqual(parseSettings(''), { ...DEFAULTS });
@@ -35,4 +35,16 @@ test('rejects theme ids that could escape the themes folder', () => {
   for (const bad of ['../secret', 'a/b', '', '.hidden', 'x'.repeat(65)]) {
     assert.equal(parseSettings(`?theme=${encodeURIComponent(bad)}`).theme, 'white', bad);
   }
+});
+
+test('toQuery omits defaults but always keeps theme', () => {
+  assert.equal(toQuery({ ...DEFAULTS }), 'theme=white');
+});
+
+test('toQuery round-trips through parseSettings', () => {
+  const s = {
+    theme: 'black', player: 2, scale: 0.5, deadzone: 0.1, stickOffset: 30,
+    tilt: false, triggerMode: 'meter', debug: true,
+  };
+  assert.deepEqual(parseSettings(toQuery(s)), s);
 });

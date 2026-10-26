@@ -1,0 +1,6 @@
+{
+  "themes": [
+    { "id": "white", "name": "White / Red" },
+    { "id": "black", "name": "Black" }
+  ]
+}
