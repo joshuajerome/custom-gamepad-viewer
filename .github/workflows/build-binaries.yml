@@ -29,12 +29,6 @@ jobs:
             shell: pwsh
             artifact_suffix: -Windows.exe
 
-          # ---------- MACOS INTEL (x86_64) ----------
-          - name: macOS (Intel)
-            os: macos-13
-            shell: bash
-            zip_suffix: -macOS-Intel.zip
-
           # ---------- MACOS APPLE SILICON (arm64) ----------
           - name: macOS (Apple Silicon)
             os: macos-14
